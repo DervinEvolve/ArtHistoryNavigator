@@ -35,6 +35,14 @@ args = "Check FLASK_APP"
 task = "workflow.run"
 args = "Create Migration"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Initialize Migrations"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Show Database Schema"
+
 [[workflows.workflow]]
 name = "Start Flask App"
 author = "agent"
@@ -100,7 +108,29 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "FLASK_APP=main.py flask db migrate -m 'Add recommendation system'"
+args = "flask db migrate -m 'Add recommendation system'"
+
+[[workflows.workflow]]
+name = "Initialize Migrations"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flask db init"
+
+[[workflows.workflow]]
+name = "Show Database Schema"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flask db show"
 
 [deployment]
 run = ["sh", "-c", "python main.py"]
