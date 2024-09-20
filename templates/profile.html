@@ -2,74 +2,55 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Your Profile</h1>
-    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <p class="mb-4"><strong>Username:</strong> {{ current_user.username }}</p>
-        <p class="mb-4"><strong>Email:</strong> {{ current_user.email }}</p>
-    </div>
+    <h1 class="text-3xl font-bold mb-8">Welcome, {{ current_user.username }}!</h1>
 
-    <h2 class="text-2xl font-bold mb-4">Your Interests</h2>
-    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <ul class="list-disc list-inside mb-4">
-            {% for interest in current_user.get_interests() %}
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Your Interests</h2>
+        <ul class="list-disc list-inside">
+            {% for interest in current_user.interests.split(',') %}
                 <li>{{ interest }}</li>
             {% endfor %}
         </ul>
-        <form action="{{ url_for('add_interest') }}" method="post" class="mb-4">
-            <input type="text" name="interest" placeholder="Add new interest" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            <button type="submit" class="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                Add Interest
-            </button>
+        <form action="{{ url_for('add_interest') }}" method="post" class="mt-4">
+            <input type="text" name="interest" placeholder="Add new interest" required class="border rounded px-2 py-1">
+            <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded">Add Interest</button>
         </form>
     </div>
 
-    <h2 class="text-2xl font-bold mb-4">Your Learning Paths</h2>
-    {% if current_user.learning_paths.all() %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Your Learning Paths</h2>
+        <ul class="list-disc list-inside">
             {% for path in current_user.learning_paths %}
-                <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
-                    <h3 class="text-xl font-bold mb-2">{{ path.title }}</h3>
-                    <p class="mb-4">{{ path.description }}</p>
-                    <a href="{{ url_for('view_learning_path', path_id=path.id) }}" class="text-blue-500 hover:text-blue-700">View Path</a>
-                </div>
+                <li><a href="{{ url_for('view_learning_path', path_id=path.id) }}" class="text-blue-500 hover:underline">{{ path.title }}</a></li>
             {% endfor %}
-        </div>
-    {% else %}
-        <p class="mb-4">You haven't created any learning paths yet.</p>
-    {% endif %}
+        </ul>
+        <a href="{{ url_for('create_learning_path') }}" class="bg-green-500 text-white px-4 py-2 rounded inline-block mt-4">Create New Learning Path</a>
+    </div>
 
-    <a href="{{ url_for('create_learning_path') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-        Create New Learning Path
-    </a>
-
-    <h2 class="text-2xl font-bold mt-8 mb-4">Recommended Learning Paths</h2>
-    {% if recommended_paths %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {% for path in recommended_paths %}
-                <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
-                    <h3 class="text-xl font-bold mb-2">{{ path.title }}</h3>
-                    <p class="mb-4">{{ path.description }}</p>
-                    <p class="text-sm text-gray-600 mb-2">Created by: {{ path.user.username }}</p>
-                    <a href="{{ url_for('view_learning_path', path_id=path.id) }}" class="text-blue-500 hover:text-blue-700">View Path</a>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p class="mb-4">No recommended learning paths at the moment.</p>
-    {% endif %}
-
-    <h2 class="text-2xl font-bold mt-8 mb-4">Recommended Resources</h2>
-    {% if recommended_resources %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Recommended Resources</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for resource in recommended_resources %}
-                <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
-                    <h3 class="text-xl font-bold mb-2">{{ resource.title }}</h3>
-                    <a href="{{ resource.url }}" target="_blank" class="text-blue-500 hover:text-blue-700">View Resource</a>
+                <div class="border rounded p-4">
+                    <h3 class="text-xl font-semibold mb-2">{{ resource.title }}</h3>
+                    <p class="text-gray-600 mb-2">{{ resource.description[:100] }}...</p>
+                    <a href="{{ resource.url }}" target="_blank" class="text-blue-500 hover:underline">View Resource</a>
                 </div>
             {% endfor %}
         </div>
-    {% else %}
-        <p class="mb-4">No recommended resources at the moment.</p>
-    {% endif %}
+    </div>
+
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Popular Resources</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for resource in popular_resources %}
+                <div class="border rounded p-4">
+                    <h3 class="text-xl font-semibold mb-2">{{ resource.title }}</h3>
+                    <p class="text-gray-600 mb-2">{{ resource.description[:100] }}...</p>
+                    <a href="{{ resource.url }}" target="_blank" class="text-blue-500 hover:underline">View Resource</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 {% endblock %}

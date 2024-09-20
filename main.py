@@ -1,31 +1,18 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from flask_migrate import Migrate
-from urllib.parse import urlparse
+from flask import Flask, render_template, request, jsonify, session
 from utils.api_helpers import perform_search
-from models import db, User, LearningPath, Resource, BrowsingHistory
-from recommendation_system import get_recommendations, update_user_history
 import asyncio
 import logging
 import math
 import os
+from collections import Counter
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db.init_app(app)
-migrate = Migrate(app, db)
-
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
 
 logging.basicConfig(level=logging.INFO)
 
-@login_manager.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+# Simple in-memory storage for search history (in a real application, this should be a database)
+search_history = Counter()
 
 @app.route("/")
 def index():
@@ -40,13 +27,17 @@ def search():
 async def api_search():
     query = request.args.get("q", "")
     page = int(request.args.get("page", 1))
+    api = request.args.get("api", "openai")
     results_per_page = 20
 
-    logging.info(f"Received search request for query: {query}, page: {page}")
+    logging.info(f"Received search request for query: {query}, page: {page}, api: {api}")
 
     try:
-        all_results = await perform_search(query)
+        all_results = await perform_search(query, api)
         logging.info(f"Search results: {all_results}")
+
+        # Update search history
+        search_history[query.lower()] += 1
 
         total_results = sum(len(results) for results in all_results['results'].values())
         total_pages = math.ceil(total_results / results_per_page)
@@ -59,6 +50,9 @@ async def api_search():
             for source, results in all_results['results'].items()
         }
 
+        # Get recommendations based on search history
+        recommendations = get_recommendations(query)
+
         logging.info(f"Returning paginated results: {paginated_results}")
 
         return jsonify({
@@ -66,145 +60,41 @@ async def api_search():
             "current_page": page,
             "total_pages": total_pages,
             "total_results": total_results,
-            "errors": all_results['errors']
+            "errors": all_results['errors'],
+            "recommendations": recommendations
         })
     except Exception as e:
         logging.error(f"Error in api_search: {str(e)}")
         return jsonify({"error": "An error occurred while fetching search results. Please try again later."}), 500
 
-@app.route("/details/<source>/<id>")
-@login_required
-def details(source, id):
-    resource = Resource.query.filter_by(id=id).first()
-    if resource:
-        update_user_history(current_user.id, resource.id)
-    return render_template("details.html", source=source, id=id)
+def get_recommendations(query, limit=5):
+    # Simple recommendation system based on search history
+    related_terms = {
+        "painting": ["canvas", "oil", "acrylic", "watercolor"],
+        "sculpture": ["marble", "bronze", "clay", "wood"],
+        "artist": ["painter", "sculptor", "photographer", "printmaker"],
+        "museum": ["gallery", "exhibition", "collection", "curator"],
+        "renaissance": ["baroque", "medieval", "classical", "modern"],
+    }
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        if user is not None:
-            flash('Please use a different username.')
-            return redirect(url_for('register'))
-        user = User.query.filter_by(email=email).first()
-        if user is not None:
-            flash('Please use a different email address.')
-            return redirect(url_for('register'))
-        user = User(username=username, email=email)
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        flash('Congratulations, you are now a registered user!')
-        return redirect(url_for('login'))
-    return render_template('register.html', title='Register')
+    recommendations = []
+    query_terms = query.lower().split()
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        try:
-            username = request.form['username']
-            password = request.form['password']
-            logging.info(f"Login attempt for user: {username}")
-            
-            user = User.query.filter_by(username=username).first()
-            if user is None:
-                logging.warning(f"Login failed: User {username} not found")
-                flash('Invalid username or password')
-                return redirect(url_for('login'))
-            
-            if not user.check_password(password):
-                logging.warning(f"Login failed: Incorrect password for user {username}")
-                flash('Invalid username or password')
-                return redirect(url_for('login'))
-            
-            login_user(user, remember=request.form.get('remember_me'))
-            logging.info(f"User {username} logged in successfully")
-            
-            next_page = request.args.get('next')
-            if not next_page or urlparse(next_page).netloc != '':
-                next_page = url_for('index')
-            return redirect(next_page)
-        
-        except Exception as e:
-            logging.error(f"Login error: {str(e)}")
-            return render_template('500.html'), 500
-    
-    return render_template('login.html', title='Sign In')
+    # Add related terms
+    for term in query_terms:
+        if term in related_terms:
+            recommendations.extend(related_terms[term])
 
-@app.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
+    # Add popular searches
+    popular_searches = search_history.most_common(10)
+    recommendations.extend([search for search, _ in popular_searches if search not in query_terms])
 
-@app.route('/profile')
-@login_required
-def profile():
-    recommended_resources = get_recommendations(current_user.id)
-    return render_template('profile.html', title='Profile', recommended_resources=recommended_resources)
+    # Remove duplicates and limit the number of recommendations
+    return list(dict.fromkeys(recommendations))[:limit]
 
-@app.route('/create_learning_path', methods=['GET', 'POST'])
-@login_required
-def create_learning_path():
-    if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        tags = request.form['tags']
-        learning_path = LearningPath(title=title, description=description, tags=tags, user=current_user)
-        db.session.add(learning_path)
-        db.session.commit()
-        flash('Your learning path has been created!')
-        return redirect(url_for('profile'))
-    return render_template('create_learning_path.html', title='Create Learning Path')
-
-@app.route('/learning_path/<int:path_id>')
-@login_required
-def view_learning_path(path_id):
-    learning_path = LearningPath.query.get_or_404(path_id)
-    if learning_path.user != current_user:
-        flash('You do not have permission to view this learning path.')
-        return redirect(url_for('profile'))
-    return render_template('view_learning_path.html', title='View Learning Path', learning_path=learning_path)
-
-@app.route('/add_resource/<int:path_id>', methods=['POST'])
-@login_required
-def add_resource(path_id):
-    learning_path = LearningPath.query.get_or_404(path_id)
-    if learning_path.user != current_user:
-        flash('You do not have permission to add resources to this learning path.')
-        return redirect(url_for('profile'))
-    
-    title = request.form['title']
-    url = request.form['url']
-    tags = request.form['tags']
-    resource = Resource(title=title, url=url, tags=tags, learning_path=learning_path)
-    db.session.add(resource)
-    db.session.commit()
-    flash('Resource added successfully!')
-    return redirect(url_for('view_learning_path', path_id=path_id))
-
-@app.route('/add_interest', methods=['POST'])
-@login_required
-def add_interest():
-    interest = request.form['interest']
-    current_user.add_interest(interest)
-    db.session.commit()
-    flash('Interest added successfully!')
-    return redirect(url_for('profile'))
-
-@app.route('/api/recommendations')
-@login_required
-def get_recommendations_route():
-    recommendations = get_recommendations(current_user.id)
-    return jsonify([resource.to_dict() for resource in recommendations])
+@app.route('/visualize')
+def visualize():
+    return render_template('visualize.html')
 
 @app.errorhandler(404)
 def page_not_found(e):
