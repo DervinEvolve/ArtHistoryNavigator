@@ -7,6 +7,7 @@ let remainingResults = 0;
 let visibleSources = ['wikipedia', 'internet_archive', 'met_museum'];
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM content loaded');
     const searchResults = document.getElementById('search-results');
     const modal = document.getElementById('modal');
     const closeModal = document.getElementById('close-modal');
@@ -28,18 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (closeModal) {
         closeModal.addEventListener('click', () => {
+            console.log('Closing modal');
             modal.classList.add('hidden');
         });
     }
 
     window.addEventListener('click', (event) => {
         if (event.target === modal) {
+            console.log('Closing modal (clicked outside)');
             modal.classList.add('hidden');
         }
     });
 
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('read-more-btn')) {
+            console.log('Read More button clicked');
             const source = e.target.dataset.source;
             const content = e.target.dataset.content;
             showModal(source, content);
@@ -51,16 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMoreButton.textContent = 'Load More';
     loadMoreButton.classList.add('bg-blue-500', 'text-white', 'px-4', 'py-2', 'rounded', 'mt-4', 'hidden');
     loadMoreButton.addEventListener('click', () => {
+        console.log('Load More button clicked');
         fetchSearchResults(currentQuery, currentPage + 1);
     });
     searchResults.after(loadMoreButton);
 
     backToTopButton.addEventListener('click', () => {
+        console.log('Back to Top button clicked');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     filterButtons.forEach(button => {
         button.addEventListener('click', () => {
+            console.log('Filter button clicked');
             const source = button.dataset.source;
             button.classList.toggle('bg-blue-500');
             button.classList.toggle('bg-gray-300');
@@ -71,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 visibleSources.push(source);
             }
             
+            console.log('Visible sources after filter:', visibleSources);
             filterResults();
         });
     });
@@ -119,6 +127,7 @@ function updateResultSections(results, page) {
     const sources = ['wikipedia', 'internet_archive', 'met_museum'];
     sources.forEach(source => {
         if (results[source] && results[source].length > 0) {
+            console.log(`Adding results for ${source}`);
             const sourceHeader = document.createElement('h2');
             sourceHeader.textContent = `${source.replace('_', ' ').charAt(0).toUpperCase() + source.replace('_', ' ').slice(1)}`;
             sourceHeader.classList.add('text-2xl', 'font-bold', 'mt-8', 'mb-4');
@@ -136,10 +145,13 @@ function updateResultSections(results, page) {
             });
 
             searchResults.appendChild(sourceResults);
+        } else {
+            console.log(`No results for ${source}`);
         }
     });
 
     if (!resultsAdded && page === 1) {
+        console.log('No results found');
         showNoResultsMessage();
     } else {
         hideNoResultsMessage();
@@ -149,6 +161,7 @@ function updateResultSections(results, page) {
 }
 
 function updateLoadMoreButton() {
+    console.log('Updating Load More button');
     const loadMoreButton = document.getElementById('load-more-button');
     if (hasMoreResults) {
         loadMoreButton.textContent = `Load More (${remainingResults} results remaining)`;
@@ -209,7 +222,7 @@ function createResultHTML(result, source) {
 
     console.log('Button HTML:', buttonHtml);
 
-    return `
+    const cardHtml = `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
             <div class="flex items-center mb-2">
                 <span class="icon ${iconClass} mr-2"></span>
@@ -219,9 +232,13 @@ function createResultHTML(result, source) {
             ${buttonHtml}
         </div>
     `;
+
+    console.log('Generated card HTML:', cardHtml);
+    return cardHtml;
 }
 
 function showModal(source, content) {
+    console.log('Showing modal for source:', source);
     const modal = document.getElementById('modal');
     const modalContent = document.getElementById('modal-content');
 
@@ -266,26 +283,31 @@ function showModal(source, content) {
 }
 
 function showLoadingIndicator() {
+    console.log('Showing loading indicator');
     const loadingIndicator = document.getElementById('loading-indicator');
     loadingIndicator.classList.remove('hidden');
 }
 
 function hideLoadingIndicator() {
+    console.log('Hiding loading indicator');
     const loadingIndicator = document.getElementById('loading-indicator');
     loadingIndicator.classList.add('hidden');
 }
 
 function showNoResultsMessage() {
+    console.log('Showing no results message');
     const noResults = document.getElementById('no-results');
     noResults.classList.remove('hidden');
 }
 
 function hideNoResultsMessage() {
+    console.log('Hiding no results message');
     const noResults = document.getElementById('no-results');
     noResults.classList.add('hidden');
 }
 
 function showErrorMessage(message) {
+    console.log('Showing error message:', message);
     const searchResults = document.getElementById('search-results');
     const errorMessage = document.createElement('p');
     errorMessage.textContent = `An error occurred: ${message}. Please try again later.`;
@@ -294,6 +316,7 @@ function showErrorMessage(message) {
 }
 
 function addToSearchHistory(query) {
+    console.log('Adding to search history:', query);
     const searchHistoryList = document.getElementById('search-history');
     if (searchHistoryList) {
         const listItem = document.createElement('li');
@@ -310,6 +333,7 @@ function addToSearchHistory(query) {
 }
 
 function lazyLoadImages() {
+    console.log('Lazy loading images');
     const images = document.querySelectorAll('img.lazy-load');
     const imageObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
@@ -328,6 +352,7 @@ function lazyLoadImages() {
 }
 
 function filterResults() {
+    console.log('Filtering results');
     const searchResults = document.getElementById('search-results');
     const resultCards = searchResults.querySelectorAll('.search-result-card');
     const headers = searchResults.querySelectorAll('h2[data-source]');
