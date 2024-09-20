@@ -4,6 +4,7 @@ let currentQuery = '';
 let currentPage = 1;
 let totalResults = 0;
 let remainingResults = 0;
+let visibleSources = ['wikipedia', 'internet_archive', 'met_museum'];
 
 document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('search-results');
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModal = document.getElementById('close-modal');
     const loadingIndicator = document.getElementById('loading-indicator');
     const backToTopButton = document.getElementById('back-to-top');
+    const filterButtons = document.querySelectorAll('.filter-btn');
 
     if (searchResults) {
         const query = new URLSearchParams(window.location.search).get('q');
@@ -55,6 +57,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     backToTopButton.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const source = button.dataset.source;
+            button.classList.toggle('bg-blue-500');
+            button.classList.toggle('bg-gray-300');
+            
+            if (visibleSources.includes(source)) {
+                visibleSources = visibleSources.filter(s => s !== source);
+            } else {
+                visibleSources.push(source);
+            }
+            
+            filterResults();
+        });
     });
 });
 
@@ -104,12 +122,14 @@ function updateResultSections(results, page) {
             const sourceHeader = document.createElement('h2');
             sourceHeader.textContent = `${source.replace('_', ' ').charAt(0).toUpperCase() + source.replace('_', ' ').slice(1)}`;
             sourceHeader.classList.add('text-2xl', 'font-bold', 'mt-8', 'mb-4');
+            sourceHeader.dataset.source = source;
             searchResults.appendChild(sourceHeader);
 
             const sourceResults = document.createElement('div');
             sourceResults.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-4');
+            sourceResults.dataset.source = source;
             
-            results[source].forEach(item => {
+            results[source].slice(0, 10).forEach(item => {
                 const resultHtml = createResultHTML(item, source);
                 sourceResults.insertAdjacentHTML('beforeend', resultHtml);
                 resultsAdded = true;
@@ -124,6 +144,8 @@ function updateResultSections(results, page) {
     } else {
         hideNoResultsMessage();
     }
+
+    filterResults();
 }
 
 function updateLoadMoreButton() {
@@ -146,24 +168,38 @@ function createResultHTML(result, source) {
 
     let cardContent = '';
     let modalContent = '';
+    let icon = '';
 
     switch (source) {
         case 'wikipedia':
-        case 'internet_archive':
+            icon = '<svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.982 0 4.898v-.455l.052-.045c.924-.005 5.401 0 5.401 0l.051.045v.434c0 .084-.103.14-.216.163-1.079.24-1.38.404-1.38.556 0 .208.547 1.353 1.207 2.807l1.853 4.035c.432-.955 1.774-3.794 2.259-4.842.532-1.17.753-1.781.753-2.008 0-.195-.323-.406-.855-.52-.742-.195-.839-.256-.839-.35v-.461l.051-.045h4.198l.051.045v.439c0 .105-.159.15-.498.195-1.033.15-1.495.421-1.495.914 0 .319.31.922.915 1.785l2.632 3.675 2.045-4.203c.501-1.008.684-1.556.684-1.782 0-.329-.372-.554-.947-.674-.575-.12-.674-.181-.674-.3v-.449l.079-.045h3.923l.052.045v.437c0 .106-.159.166-.498.212-.904.15-1.573.421-1.965.914-1.052 1.306-2.47 4.506-3.395 6.779l-3.131-4.369c-.966-1.34-1.433-2.031-1.433-2.136 0-.094.117-.18.352-.255.352-.12.466-.18.466-.271v-.456l.078-.045h3.773l.078.045v.437c0 .151-.206.212-.618.301-.462.105-.593.24-.593.366 0 .33.635 1.682 1.641 3.453.611-1.263 1.809-3.732 1.92-3.958.342-.691.524-1.125.524-1.303 0-.247-.262-.42-.786-.495-.462-.061-.572-.122-.572-.273v-.46l.078-.046h2.687z"/></svg>';
             cardContent = `
-                <h3 class="text-lg font-semibold mb-2">${result.title}</h3>
-                <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || result.description || '', 100)}</p>
+                <h3 class="text-lg font-semibold mb-2 flex items-center">${icon}${result.title}</h3>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || '', 100)}</p>
             `;
             modalContent = JSON.stringify({
                 title: result.title,
-                content: result.snippet || result.description,
-                url: source === 'wikipedia' ? `https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}` : `https://archive.org/details/${result.identifier}`
+                content: result.snippet,
+                url: `https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}`
+            });
+            break;
+        case 'internet_archive':
+            icon = '<svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm0-18c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 14c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/></svg>';
+            cardContent = `
+                <h3 class="text-lg font-semibold mb-2 flex items-center">${icon}${result.title}</h3>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.description || '', 100)}</p>
+            `;
+            modalContent = JSON.stringify({
+                title: result.title,
+                content: result.description,
+                url: `https://archive.org/details/${result.identifier}`
             });
             break;
         case 'met_museum':
+            icon = '<svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7v-2z"/></svg>';
             cardContent = `
                 <img src="${result.primaryImageSmall}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryImageSmall}">
-                <h3 class="text-lg font-semibold mb-2">${result.title}</h3>
+                <h3 class="text-lg font-semibold mb-2 flex items-center">${icon}${result.title}</h3>
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName, 50)}</p>
             `;
             modalContent = JSON.stringify(result);
@@ -171,7 +207,7 @@ function createResultHTML(result, source) {
     }
 
     return `
-        <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in">
+        <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
             ${cardContent}
             <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 w-full" data-source="${source}" data-content='${modalContent}'>Read More</button>
         </div>
@@ -273,6 +309,30 @@ function lazyLoadImages() {
 
     images.forEach(image => {
         imageObserver.observe(image);
+    });
+}
+
+function filterResults() {
+    const searchResults = document.getElementById('search-results');
+    const resultCards = searchResults.querySelectorAll('.search-result-card');
+    const headers = searchResults.querySelectorAll('h2[data-source]');
+
+    resultCards.forEach(card => {
+        const source = card.dataset.source;
+        if (visibleSources.includes(source)) {
+            card.classList.remove('hidden');
+        } else {
+            card.classList.add('hidden');
+        }
+    });
+
+    headers.forEach(header => {
+        const source = header.dataset.source;
+        if (visibleSources.includes(source)) {
+            header.classList.remove('hidden');
+        } else {
+            header.classList.add('hidden');
+        }
     });
 }
 

@@ -7,6 +7,14 @@
         <input type="text" name="q" value="{{ query }}" class="w-full max-w-lg px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
         <button type="submit" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200">Search</button>
     </form>
+    <div class="mb-4">
+        <h3 class="text-xl font-semibold mb-2">Filter Results:</h3>
+        <div class="flex space-x-2">
+            <button class="filter-btn bg-blue-500 text-white px-3 py-1 rounded" data-source="wikipedia">Wikipedia</button>
+            <button class="filter-btn bg-blue-500 text-white px-3 py-1 rounded" data-source="internet_archive">Internet Archive</button>
+            <button class="filter-btn bg-blue-500 text-white px-3 py-1 rounded" data-source="met_museum">Met Museum</button>
+        </div>
+    </div>
     <div class="flex flex-col md:flex-row">
         <aside class="w-full md:w-1/4 pr-4 mb-8 md:mb-0">
             <div class="sidebar">
