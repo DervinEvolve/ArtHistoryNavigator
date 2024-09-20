@@ -1,4 +1,4 @@
-/* Add any custom styles here */
+/* Custom styles */
 .loading {
     display: flex;
     justify-content: center;
@@ -19,4 +19,58 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Improve readability on smaller screens */
+@media (max-width: 768px) {
+    body {
+        font-size: 16px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Adjust layout for very small screens */
+@media (max-width: 480px) {
+    #search-results {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Enhance accessibility */
+a:focus, button:focus, input:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Improve contrast for better readability */
+body {
+    color: #333;
+}
+
+.bg-blue-600 {
+    background-color: #2563eb;
+}
+
+.hover\:bg-blue-700:hover {
+    background-color: #1d4ed8;
+}
+
+/* Add smooth transitions */
+a, button {
+    transition: all 0.2s ease-in-out;
 }
