@@ -183,3 +183,24 @@ body {
         font-size: 1.75rem;
     }
 }
+
+/* New styles for search result cards */
+.search-result-card img {
+    object-fit: cover;
+    height: 200px;
+    width: 100%;
+}
+
+.search-result-card p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.read-more-btn {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: auto;
+}

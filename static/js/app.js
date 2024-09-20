@@ -29,6 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.classList.add('hidden');
         }
     });
+
+    // Event listener for Read more buttons
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('read-more-btn')) {
+            const source = e.target.dataset.source;
+            const content = JSON.parse(e.target.dataset.content);
+            showModal(source, content);
+        }
+    });
 });
 
 async function fetchSearchResults(query) {
@@ -90,23 +99,14 @@ function createResultHTML(result, source) {
         return text.substr(0, maxLength) + '...';
     };
 
-    const createCard = (title, snippet, fullContent, imageUrl = null) => `
-        <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 mb-4">
-            <h3 class="text-lg font-semibold text-blue-600 hover:underline mb-2">${title}</h3>
-            ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="w-full h-48 object-cover mb-2 rounded">` : ''}
-            <p class="text-sm text-gray-600 mb-2">${snippet}</p>
-            <button onclick="showModal('${source}', ${JSON.stringify(fullContent)})" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200">Read More</button>
+    return `
+        <div class="search-result-card bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col h-full">
+            <h3 class="text-lg font-semibold text-blue-600 hover:underline mb-2">${result.title}</h3>
+            ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mb-2 rounded">` : ''}
+            <p class="text-sm text-gray-600 mb-2 flex-grow">${truncateText(result.snippet || result.description || '', 100)}</p>
+            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200" data-source="${source}" data-content='${JSON.stringify(result)}'>Read More</button>
         </div>
     `;
-
-    switch (source) {
-        case 'wikipedia':
-            return createCard(result.title, truncateText(result.snippet, 100), result);
-        case 'internet_archive':
-            return createCard(result.title, truncateText(result.description || 'No description available', 100), result);
-        case 'met_museum':
-            return createCard(result.title, result.artistDisplayName ? `By ${result.artistDisplayName}` : 'Artist unknown', result, result.primaryImageSmall);
-    }
 }
 
 function showModal(source, content) {
