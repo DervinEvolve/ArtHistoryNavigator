@@ -21,8 +21,13 @@ async def api_search():
     query = request.args.get("q", "")
     page = int(request.args.get("page", 1))
     results_per_page = 20
+
+    logging.info(f"Received search request for query: {query}, page: {page}")
+
     try:
         all_results = await perform_search(query)
+        logging.info(f"Search results: {all_results}")
+
         total_results = sum(len(results) for results in all_results.values())
         total_pages = math.ceil(total_results / results_per_page)
 
@@ -34,6 +39,8 @@ async def api_search():
             "internet_archive": all_results["internet_archive"][start_index:end_index],
             "met_museum": all_results["met_museum"][start_index:end_index]
         }
+
+        logging.info(f"Returning paginated results: {paginated_results}")
 
         return jsonify({
             "results": paginated_results,

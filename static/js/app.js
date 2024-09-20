@@ -62,16 +62,22 @@ async function fetchSearchResults(query, page = 1) {
     isLoading = true;
     showLoadingIndicator();
 
+    console.log('Fetching results for query:', query, 'page:', page);
+
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
 
+        console.log('API response:', data);
+
         if (data.results && Object.keys(data.results).some(key => data.results[key].length > 0)) {
+            console.log('Results found:', data.results);
             updateResultSections(data.results);
             hasMoreResults = page < data.total_pages;
             currentPage = page;
         } else {
+            console.log('No results found');
             showNoResultsMessage();
         }
     } catch (error) {
@@ -84,10 +90,12 @@ async function fetchSearchResults(query, page = 1) {
 }
 
 function updateResultSections(results) {
+    console.log('Updating result sections with:', results);
     const searchResults = document.getElementById('search-results');
     Object.entries(results).forEach(([source, items]) => {
         items.forEach(item => {
             const resultHtml = createResultHTML(item, source);
+            console.log('Generated HTML for result:', resultHtml);
             searchResults.insertAdjacentHTML('beforeend', resultHtml);
         });
     });
@@ -202,7 +210,6 @@ function addToSearchHistory(query) {
         listItem.appendChild(link);
         searchHistoryList.prepend(listItem);
 
-        // Limit history to 5 items
         while (searchHistoryList.children.length > 5) {
             searchHistoryList.removeChild(searchHistoryList.lastChild);
         }
