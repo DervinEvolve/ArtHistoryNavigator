@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
@@ -149,17 +150,30 @@ def view_learning_path(path_id):
 
 @app.route('/visualize')
 def visualize():
-    # Sample data for timeline and map
+    # Expanded timeline data
     timeline_data = [
         {'start_date': {'year': 1914}, 'end_date': {'year': 1918}, 'text': {'headline': 'World War I', 'text': 'The First World War'}},
         {'start_date': {'year': 1939}, 'end_date': {'year': 1945}, 'text': {'headline': 'World War II', 'text': 'The Second World War'}},
-        {'start_date': {'year': 1969}, 'text': {'headline': 'Moon Landing', 'text': 'Apollo 11 lands on the moon'}}
+        {'start_date': {'year': 1969}, 'text': {'headline': 'Moon Landing', 'text': 'Apollo 11 lands on the moon'}},
+        {'start_date': {'year': 1776}, 'text': {'headline': 'American Revolution', 'text': 'Declaration of Independence signed'}},
+        {'start_date': {'year': 1789}, 'end_date': {'year': 1799}, 'text': {'headline': 'French Revolution', 'text': 'Period of radical social and political upheaval in France'}},
+        {'start_date': {'year': 1989}, 'text': {'headline': 'Fall of the Berlin Wall', 'text': 'The fall of the Berlin Wall marks the end of the Cold War'}},
+        {'start_date': {'year': 2001, 'month': 9, 'day': 11}, 'text': {'headline': '9/11 Attacks', 'text': 'Terrorist attacks in the United States'}},
+        {'start_date': {'year': 2008}, 'text': {'headline': 'Global Financial Crisis', 'text': 'Worldwide economic downturn'}},
+        {'start_date': {'year': 2020}, 'text': {'headline': 'COVID-19 Pandemic', 'text': 'Global pandemic caused by the SARS-CoV-2 virus'}}
     ]
     
+    # Expanded map data
     map_data = [
         {'lat': 48.8566, 'lon': 2.3522, 'name': 'Paris', 'description': 'Capital of France'},
         {'lat': 51.5074, 'lon': -0.1278, 'name': 'London', 'description': 'Capital of the United Kingdom'},
-        {'lat': 40.7128, 'lon': -74.0060, 'name': 'New York', 'description': 'Largest city in the United States'}
+        {'lat': 40.7128, 'lon': -74.0060, 'name': 'New York', 'description': 'Largest city in the United States'},
+        {'lat': 35.6762, 'lon': 139.6503, 'name': 'Tokyo', 'description': 'Capital of Japan'},
+        {'lat': -33.8688, 'lon': 151.2093, 'name': 'Sydney', 'description': 'Largest city in Australia'},
+        {'lat': 55.7558, 'lon': 37.6173, 'name': 'Moscow', 'description': 'Capital of Russia'},
+        {'lat': -22.9068, 'lon': -43.1729, 'name': 'Rio de Janeiro', 'description': 'Second-largest city in Brazil'},
+        {'lat': 30.0444, 'lon': 31.2357, 'name': 'Cairo', 'description': 'Capital of Egypt'},
+        {'lat': 28.6139, 'lon': 77.2090, 'name': 'New Delhi', 'description': 'Capital of India'}
     ]
     
     return render_template('visualize.html', title='Visualize', timeline_data=timeline_data, map_data=map_data)

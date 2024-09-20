@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -6,11 +7,25 @@
 
     <div class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Interactive Timeline</h2>
+        <div class="mb-4">
+            <label for="timeline-filter" class="block text-sm font-medium text-gray-700">Filter by century:</label>
+            <select id="timeline-filter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="all">All</option>
+                <option value="18">18th Century</option>
+                <option value="19">19th Century</option>
+                <option value="20">20th Century</option>
+                <option value="21">21st Century</option>
+            </select>
+        </div>
         <div id="timeline-embed" style="width: 100%; height: 600px"></div>
     </div>
 
     <div class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Interactive Map</h2>
+        <div class="mb-4">
+            <label for="map-search" class="block text-sm font-medium text-gray-700">Search for a location:</label>
+            <input type="text" id="map-search" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Enter a city name">
+        </div>
         <div id="map" style="width: 100%; height: 400px"></div>
     </div>
 </div>
@@ -23,6 +38,19 @@
 
     window.timeline = new TL.Timeline('timeline-embed', timeline_json);
 
+    // Timeline filter functionality
+    document.getElementById('timeline-filter').addEventListener('change', function() {
+        var century = this.value;
+        var filteredEvents = timeline_json.events;
+        if (century !== 'all') {
+            filteredEvents = timeline_json.events.filter(function(event) {
+                var year = event.start_date.year;
+                return Math.floor(year / 100) + 1 == century;
+            });
+        }
+        window.timeline.setConfig({events: filteredEvents});
+    });
+
     // Leaflet.js map initialization
     var map = L.map('map').setView([0, 0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -30,9 +58,28 @@
     }).addTo(map);
 
     var mapData = {{ map_data | tojson | safe }};
+    var markers = [];
+
     mapData.forEach(function(point) {
-        L.marker([point.lat, point.lon]).addTo(map)
+        var marker = L.marker([point.lat, point.lon]).addTo(map)
             .bindPopup('<b>' + point.name + '</b><br>' + point.description);
+        markers.push({marker: marker, data: point});
+    });
+
+    // Map search functionality
+    document.getElementById('map-search').addEventListener('input', function() {
+        var searchTerm = this.value.toLowerCase();
+        markers.forEach(function(item) {
+            if (item.data.name.toLowerCase().includes(searchTerm)) {
+                item.marker.addTo(map);
+                if (searchTerm === item.data.name.toLowerCase()) {
+                    map.setView([item.data.lat, item.data.lon], 10);
+                    item.marker.openPopup();
+                }
+            } else {
+                map.removeLayer(item.marker);
+            }
+        });
     });
 </script>
 {% endblock %}
