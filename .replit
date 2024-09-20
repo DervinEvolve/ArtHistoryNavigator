@@ -112,7 +112,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "flask db migrate -m 'Add recommendation system'"
+args = "flask db migrate -m 'Add tags to LearningPath and Resource models'"
 
 [[workflows.workflow]]
 name = "Initialize Migrations"

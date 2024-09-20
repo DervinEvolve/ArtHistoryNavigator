@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from urllib.parse import urlparse
 from utils.api_helpers import perform_search
 from models import db, User, LearningPath, Resource, BrowsingHistory
-from recommendation_system import recommend_learning_paths, recommend_resources
+from recommendation_system import get_recommendations, update_user_history
 import asyncio
 import logging
 import math
@@ -78,9 +78,7 @@ def details(source, id):
     # Update browsing history
     resource = Resource.query.filter_by(id=id).first()
     if resource:
-        browsing_history = BrowsingHistory(user=current_user, resource=resource)
-        db.session.add(browsing_history)
-        db.session.commit()
+        update_user_history(current_user.id, resource.id)
     return render_template("details.html", source=source, id=id)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -131,9 +129,8 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    recommended_paths = recommend_learning_paths(current_user)
-    recommended_resources = recommend_resources(current_user)
-    return render_template('profile.html', title='Profile', recommended_paths=recommended_paths, recommended_resources=recommended_resources)
+    recommended_resources = get_recommendations(current_user.id)
+    return render_template('profile.html', title='Profile', recommended_resources=recommended_resources)
 
 @app.route('/create_learning_path', methods=['GET', 'POST'])
 @login_required
@@ -141,7 +138,8 @@ def create_learning_path():
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
-        learning_path = LearningPath(title=title, description=description, user=current_user)
+        tags = request.form['tags']
+        learning_path = LearningPath(title=title, description=description, tags=tags, user=current_user)
         db.session.add(learning_path)
         db.session.commit()
         flash('Your learning path has been created!')
@@ -167,7 +165,8 @@ def add_resource(path_id):
     
     title = request.form['title']
     url = request.form['url']
-    resource = Resource(title=title, url=url, learning_path=learning_path)
+    tags = request.form['tags']
+    resource = Resource(title=title, url=url, tags=tags, learning_path=learning_path)
     db.session.add(resource)
     db.session.commit()
     flash('Resource added successfully!')
@@ -181,6 +180,12 @@ def add_interest():
     db.session.commit()
     flash('Interest added successfully!')
     return redirect(url_for('profile'))
+
+@app.route('/api/recommendations')
+@login_required
+def get_recommendations_route():
+    recommendations = get_recommendations(current_user.id)
+    return jsonify([resource.to_dict() for resource in recommendations])
 
 @app.errorhandler(404)
 def page_not_found(e):

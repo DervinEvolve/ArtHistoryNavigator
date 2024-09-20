@@ -1,61 +1,54 @@
+from flask_login import current_user
 from models import User, LearningPath, Resource
 from sqlalchemy import func
 from collections import Counter
 
-def get_user_interests(user):
-    # Extract interests from user's learning paths and resources
+def get_user_interests(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return []
+    
+    # Combine interests from learning paths and resources
     interests = []
     for path in user.learning_paths:
-        interests.extend(path.title.lower().split())
-        for resource in path.resources:
-            interests.extend(resource.title.lower().split())
-    return Counter(interests)
+        interests.extend(path.tags.split(','))
+    for resource in user.resources:
+        interests.extend(resource.tags.split(','))
+    
+    return [interest.strip().lower() for interest in interests if interest.strip()]
 
-def get_user_browsing_history(user):
-    # This function should be called when a user views a resource
-    # For now, we'll return a mock browsing history
-    return Counter(['art', 'renaissance', 'history', 'painting'])
+def get_recommendations(user_id, limit=5):
+    user_interests = get_user_interests(user_id)
+    if not user_interests:
+        return []
+    
+    # Find resources that match user interests
+    matching_resources = Resource.query.filter(
+        func.lower(Resource.tags).contains(func.lower(interest))
+        for interest in user_interests
+    ).all()
+    
+    # Count occurrences of each resource
+    resource_counts = Counter(matching_resources)
+    
+    # Sort resources by relevance (number of matching tags)
+    sorted_resources = sorted(resource_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    # Return top N recommendations
+    return [resource for resource, count in sorted_resources[:limit]]
 
-def recommend_learning_paths(user, limit=5):
-    user_interests = get_user_interests(user)
-    user_history = get_user_browsing_history(user)
+def update_user_history(user_id, resource_id):
+    user = User.query.get(user_id)
+    resource = Resource.query.get(resource_id)
     
-    # Combine interests and browsing history
-    user_preferences = user_interests + user_history
-    
-    # Get all learning paths not created by the user
-    all_paths = LearningPath.query.filter(LearningPath.user_id != user.id).all()
-    
-    # Score each learning path based on user preferences
-    scored_paths = []
-    for path in all_paths:
-        score = sum(user_preferences.get(word.lower(), 0) for word in path.title.split())
-        scored_paths.append((path, score))
-    
-    # Sort paths by score and return the top 'limit' paths
-    recommended_paths = sorted(scored_paths, key=lambda x: x[1], reverse=True)[:limit]
-    return [path for path, score in recommended_paths]
+    if user and resource and resource not in user.resources:
+        user.resources.append(resource)
+        db.session.commit()
 
-def recommend_resources(user, limit=5):
-    user_interests = get_user_interests(user)
-    user_history = get_user_browsing_history(user)
-    
-    # Combine interests and browsing history
-    user_preferences = user_interests + user_history
-    
-    # Get all resources not in the user's learning paths
-    user_resource_ids = set()
-    for path in user.learning_paths:
-        user_resource_ids.update(resource.id for resource in path.resources)
-    
-    all_resources = Resource.query.filter(~Resource.id.in_(user_resource_ids)).all()
-    
-    # Score each resource based on user preferences
-    scored_resources = []
-    for resource in all_resources:
-        score = sum(user_preferences.get(word.lower(), 0) for word in resource.title.split())
-        scored_resources.append((resource, score))
-    
-    # Sort resources by score and return the top 'limit' resources
-    recommended_resources = sorted(scored_resources, key=lambda x: x[1], reverse=True)[:limit]
-    return [resource for resource, score in recommended_resources]
+# Add this function to the routes in main.py
+def get_recommendations_route():
+    if current_user.is_authenticated:
+        recommendations = get_recommendations(current_user.id)
+        return jsonify([resource.to_dict() for resource in recommendations])
+    else:
+        return jsonify([])

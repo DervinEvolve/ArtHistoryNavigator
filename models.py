@@ -35,6 +35,7 @@ class LearningPath(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120))
     description = db.Column(db.Text)
+    tags = db.Column(db.String(500))  # New field for tags
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     resources = db.relationship('Resource', backref='learning_path', lazy='dynamic')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -43,8 +44,19 @@ class Resource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120))
     url = db.Column(db.String(250))
+    tags = db.Column(db.String(500))  # New field for tags
     learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_path.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'url': self.url,
+            'tags': self.tags,
+            'learning_path_id': self.learning_path_id,
+            'created_at': self.created_at.isoformat()
+        }
 
 class BrowsingHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
