@@ -2,6 +2,8 @@ let isLoading = false;
 let hasMoreResults = true;
 let currentQuery = '';
 let currentPage = 1;
+let totalResults = 0;
+let remainingResults = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('search-results');
@@ -75,6 +77,8 @@ async function fetchSearchResults(query, page = 1) {
         updateResultSections(data.results, page);
         hasMoreResults = page < data.total_pages;
         currentPage = page;
+        totalResults = data.total_results;
+        remainingResults = totalResults - (currentPage * Object.values(data.results).flat().length);
         updateLoadMoreButton();
     } catch (error) {
         console.error('Error fetching search results:', error);
@@ -90,26 +94,47 @@ function updateResultSections(results, page) {
     const searchResults = document.getElementById('search-results');
     let resultsAdded = false;
 
-    Object.entries(results).forEach(([source, items]) => {
-        items.forEach(item => {
-            const resultHtml = createResultHTML(item, source);
-            console.log('Generated HTML for result:', resultHtml);
-            searchResults.insertAdjacentHTML('beforeend', resultHtml);
-            resultsAdded = true;
-        });
+    if (page === 1) {
+        searchResults.innerHTML = '';
+    }
+
+    const sources = ['wikipedia', 'internet_archive', 'met_museum'];
+    sources.forEach(source => {
+        if (results[source] && results[source].length > 0) {
+            const sourceHeader = document.createElement('h2');
+            sourceHeader.textContent = `${source.replace('_', ' ').charAt(0).toUpperCase() + source.replace('_', ' ').slice(1)}`;
+            sourceHeader.classList.add('text-2xl', 'font-bold', 'mt-8', 'mb-4');
+            searchResults.appendChild(sourceHeader);
+
+            const sourceResults = document.createElement('div');
+            sourceResults.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-4');
+            
+            results[source].forEach(item => {
+                const resultHtml = createResultHTML(item, source);
+                sourceResults.insertAdjacentHTML('beforeend', resultHtml);
+                resultsAdded = true;
+            });
+
+            searchResults.appendChild(sourceResults);
+        }
     });
 
     if (!resultsAdded && page === 1) {
         showNoResultsMessage();
+    } else {
+        hideNoResultsMessage();
     }
 }
 
 function updateLoadMoreButton() {
     const loadMoreButton = document.getElementById('load-more-button');
     if (hasMoreResults) {
+        loadMoreButton.textContent = `Load More (${remainingResults} results remaining)`;
         loadMoreButton.classList.remove('hidden');
+        loadMoreButton.disabled = false;
     } else {
         loadMoreButton.classList.add('hidden');
+        loadMoreButton.disabled = true;
     }
 }
 
@@ -126,8 +151,8 @@ function createResultHTML(result, source) {
         case 'wikipedia':
         case 'internet_archive':
             cardContent = `
-                <h3>${result.title}</h3>
-                <p>${truncateText(result.snippet || result.description || '', 100)}</p>
+                <h3 class="text-lg font-semibold mb-2">${result.title}</h3>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || result.description || '', 100)}</p>
             `;
             modalContent = JSON.stringify({
                 title: result.title,
@@ -137,18 +162,18 @@ function createResultHTML(result, source) {
             break;
         case 'met_museum':
             cardContent = `
-                <img src="${result.primaryImageSmall}" alt="${result.title}" class="lazy-load" data-src="${result.primaryImageSmall}">
-                <h3>${result.title}</h3>
-                <p>${truncateText(result.artistDisplayName, 50)}</p>
+                <img src="${result.primaryImageSmall}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryImageSmall}">
+                <h3 class="text-lg font-semibold mb-2">${result.title}</h3>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName, 50)}</p>
             `;
             modalContent = JSON.stringify(result);
             break;
     }
 
     return `
-        <div class="search-result-card fade-in">
+        <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in">
             ${cardContent}
-            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200" data-source="${source}" data-content='${modalContent}'>Read More</button>
+            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 w-full" data-source="${source}" data-content='${modalContent}'>Read More</button>
         </div>
     `;
 }
@@ -162,14 +187,14 @@ function showModal(source, content) {
         case 'wikipedia':
             htmlContent = `
                 <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <p>${content.content}</p>
+                <p class="mb-4">${content.content}</p>
                 <a href="${content.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
             `;
             break;
         case 'internet_archive':
             htmlContent = `
                 <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <p>${content.content}</p>
+                <p class="mb-4">${content.content}</p>
                 <a href="${content.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
             `;
             break;
@@ -177,9 +202,9 @@ function showModal(source, content) {
             htmlContent = `
                 <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
                 <img src="${content.primaryImage}" alt="${content.title}" class="w-full max-h-96 object-contain mb-4">
-                <p><strong>Artist:</strong> ${content.artistDisplayName || 'Unknown'}</p>
-                <p><strong>Date:</strong> ${content.objectDate || 'N/A'}</p>
-                <p><strong>Medium:</strong> ${content.medium || 'N/A'}</p>
+                <p class="mb-2"><strong>Artist:</strong> ${content.artistDisplayName || 'Unknown'}</p>
+                <p class="mb-2"><strong>Date:</strong> ${content.objectDate || 'N/A'}</p>
+                <p class="mb-4"><strong>Medium:</strong> ${content.medium || 'N/A'}</p>
                 <a href="${content.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
             `;
             break;
@@ -200,8 +225,13 @@ function hideLoadingIndicator() {
 }
 
 function showNoResultsMessage() {
-    const searchResults = document.getElementById('search-results');
-    searchResults.innerHTML = '<p class="text-center text-gray-600">No results found. Please try a different search term.</p>';
+    const noResults = document.getElementById('no-results');
+    noResults.classList.remove('hidden');
+}
+
+function hideNoResultsMessage() {
+    const noResults = document.getElementById('no-results');
+    noResults.classList.add('hidden');
 }
 
 function showErrorMessage(message) {

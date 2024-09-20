@@ -61,8 +61,18 @@ async def perform_search(query):
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
+    sources = ['wikipedia', 'internet_archive', 'met_museum']
+    search_results = {}
+    errors = {}
+
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            errors[sources[i]] = str(result)
+            search_results[sources[i]] = []
+        else:
+            search_results[sources[i]] = result
+
     return {
-        "wikipedia": results[0] if not isinstance(results[0], Exception) else [],
-        "internet_archive": results[1] if not isinstance(results[1], Exception) else [],
-        "met_museum": results[2] if not isinstance(results[2], Exception) else []
+        "results": search_results,
+        "errors": errors
     }

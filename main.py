@@ -28,16 +28,15 @@ async def api_search():
         all_results = await perform_search(query)
         logging.info(f"Search results: {all_results}")
 
-        total_results = sum(len(results) for results in all_results.values())
+        total_results = sum(len(results) for results in all_results['results'].values())
         total_pages = math.ceil(total_results / results_per_page)
 
         start_index = (page - 1) * results_per_page
         end_index = start_index + results_per_page
 
         paginated_results = {
-            "wikipedia": all_results["wikipedia"][start_index:end_index],
-            "internet_archive": all_results["internet_archive"][start_index:end_index],
-            "met_museum": all_results["met_museum"][start_index:end_index]
+            source: results[start_index:end_index]
+            for source, results in all_results['results'].items()
         }
 
         logging.info(f"Returning paginated results: {paginated_results}")
@@ -45,7 +44,9 @@ async def api_search():
         return jsonify({
             "results": paginated_results,
             "current_page": page,
-            "total_pages": total_pages
+            "total_pages": total_pages,
+            "total_results": total_results,
+            "errors": all_results['errors']
         })
     except Exception as e:
         logging.error(f"Error in api_search: {str(e)}")
