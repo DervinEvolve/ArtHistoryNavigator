@@ -161,6 +161,7 @@ function updateLoadMoreButton() {
 }
 
 function createResultHTML(result, source) {
+    console.log('Creating result HTML for:', result, 'Source:', source);
     const truncateText = (text, maxLength) => {
         if (text.length <= maxLength) return text;
         return text.substr(0, maxLength) + '...';
@@ -204,6 +205,10 @@ function createResultHTML(result, source) {
         modalContent = JSON.stringify({ error: 'Unable to display full content' });
     }
 
+    let buttonHtml = `<button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>`;
+
+    console.log('Button HTML:', buttonHtml);
+
     return `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
             <div class="flex items-center mb-2">
@@ -211,7 +216,7 @@ function createResultHTML(result, source) {
                 <h3 class="text-lg font-semibold">${result.title || 'No title'}</h3>
             </div>
             ${cardContent}
-            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>
+            ${buttonHtml}
         </div>
     `;
 }
