@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
-from utils.api_helpers import search_wikipedia, search_internet_archive, search_met_museum
-import requests
+from utils.api_helpers import perform_search
+import asyncio
 
 app = Flask(__name__)
 
@@ -14,22 +14,13 @@ def search():
     return render_template("search.html", query=query)
 
 @app.route("/api/search")
-def api_search():
+async def api_search():
     query = request.args.get("q", "")
     try:
-        wikipedia_results = search_wikipedia(query)
-        internet_archive_results = search_internet_archive(query)
-        met_museum_results = search_met_museum(query)
-        
-        results = {
-            "wikipedia": wikipedia_results,
-            "internet_archive": internet_archive_results,
-            "met_museum": met_museum_results
-        }
-        
+        results = await perform_search(query)
         return jsonify(results)
-    except requests.RequestException as e:
-        return jsonify({"error": "An error occurred while fetching search results. Please try again later."}), 500
+    except Exception as e:
+        return jsonify({"error": f"An error occurred while fetching search results: {str(e)}"}), 500
 
 @app.route("/details/<source>/<id>")
 def details(source, id):

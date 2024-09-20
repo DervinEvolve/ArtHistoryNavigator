@@ -22,7 +22,10 @@ async function fetchSearchResults(query) {
     const metMuseumResults = document.querySelector('#met-museum-results ul');
 
     const loadingIndicators = document.querySelectorAll('.loading');
-    loadingIndicators.forEach(indicator => indicator.classList.remove('hidden'));
+    loadingIndicators.forEach(indicator => {
+        indicator.classList.remove('hidden');
+        indicator.innerHTML = '<p class="text-center">Loading...</p>';
+    });
 
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -31,42 +34,9 @@ async function fetchSearchResults(query) {
         }
         const data = await response.json();
 
-        wikipediaResults.innerHTML = '';
-        data.wikipedia.forEach(result => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <a href="/details/wikipedia/${encodeURIComponent(result.pageid)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
-                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
-                    <p class="text-sm text-gray-600 mt-2">${result.snippet}</p>
-                </a>
-            `;
-            wikipediaResults.appendChild(li);
-        });
-
-        internetArchiveResults.innerHTML = '';
-        data.internet_archive.forEach(result => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <a href="/details/internet_archive/${encodeURIComponent(result.identifier)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
-                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
-                    <p class="text-sm text-gray-600 mt-2">${result.description ? result.description.slice(0, 100) + '...' : 'No description available'}</p>
-                </a>
-            `;
-            internetArchiveResults.appendChild(li);
-        });
-
-        metMuseumResults.innerHTML = '';
-        data.met_museum.forEach(result => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <a href="/details/met_museum/${encodeURIComponent(result.objectID)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
-                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
-                    <p class="text-sm text-gray-600 mt-2">${result.artistDisplayName ? 'By ' + result.artistDisplayName : 'Artist unknown'}</p>
-                    ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mt-2 max-w-full h-auto rounded">` : ''}
-                </a>
-            `;
-            metMuseumResults.appendChild(li);
-        });
+        updateResultSection(wikipediaResults, data.wikipedia, 'wikipedia');
+        updateResultSection(internetArchiveResults, data.internet_archive, 'internet_archive');
+        updateResultSection(metMuseumResults, data.met_museum, 'met_museum');
     } catch (error) {
         console.error('Error fetching search results:', error);
         const errorMessage = document.createElement('p');
@@ -78,11 +48,51 @@ async function fetchSearchResults(query) {
     }
 }
 
+function updateResultSection(container, results, source) {
+    container.innerHTML = '';
+    if (results.length === 0) {
+        container.innerHTML = '<p class="text-gray-600">No results found</p>';
+        return;
+    }
+    results.forEach(result => {
+        const li = document.createElement('li');
+        li.innerHTML = createResultHTML(result, source);
+        container.appendChild(li);
+    });
+}
+
+function createResultHTML(result, source) {
+    switch (source) {
+        case 'wikipedia':
+            return `
+                <a href="/details/wikipedia/${encodeURIComponent(result.pageid)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
+                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
+                    <p class="text-sm text-gray-600 mt-2">${result.snippet}</p>
+                </a>
+            `;
+        case 'internet_archive':
+            return `
+                <a href="/details/internet_archive/${encodeURIComponent(result.identifier)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
+                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
+                    <p class="text-sm text-gray-600 mt-2">${result.description ? result.description.slice(0, 100) + '...' : 'No description available'}</p>
+                </a>
+            `;
+        case 'met_museum':
+            return `
+                <a href="/details/met_museum/${encodeURIComponent(result.objectID)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
+                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
+                    <p class="text-sm text-gray-600 mt-2">${result.artistDisplayName ? 'By ' + result.artistDisplayName : 'Artist unknown'}</p>
+                    ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mt-2 max-w-full h-auto rounded">` : ''}
+                </a>
+            `;
+    }
+}
+
 async function fetchDetails(source, id) {
     const detailsTitle = document.getElementById('details-title');
     const detailsContent = document.getElementById('details-content');
 
-    detailsContent.innerHTML = '<div class="loading"></div>';
+    detailsContent.innerHTML = '<div class="loading"><p class="text-center">Loading...</p></div>';
 
     try {
         let data;
