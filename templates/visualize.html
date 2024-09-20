@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="https://cdn.knightlab.com/libs/storymapjs/latest/css/storymap.css">
 <style>
     .loading-indicator {
         display: flex;
@@ -33,8 +34,8 @@
     <div class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Interactive Timeline</h2>
         <div class="mb-4">
-            <label for="timeline-filter" class="block text-sm font-medium text-gray-700">Filter by century:</label>
-            <select id="timeline-filter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <label for="century-filter" class="block text-sm font-medium text-gray-700">Filter by century:</label>
+            <select id="century-filter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 <option value="all">All</option>
                 <option value="18">18th Century</option>
                 <option value="19">19th Century</option>
@@ -49,18 +50,16 @@
 
     <div class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Interactive Map</h2>
-        <div class="mb-4">
-            <label for="map-search" class="block text-sm font-medium text-gray-700">Search for a location:</label>
-            <input type="text" id="map-search" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Enter a city name">
-        </div>
         <div id="map-loading" class="loading-indicator"></div>
         <div id="map-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"></div>
-        <div id="map" style="width: 100%; height: 400px"></div>
+        <div id="storymap-embed" style="width: 100%; height: 600px"></div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="https://cdn.knightlab.com/libs/timeline3/latest/js/timeline.js"></script>
+<script src="https://cdn.knightlab.com/libs/storymapjs/latest/js/storymap.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM content loaded');
@@ -95,9 +94,37 @@
             timelineLoading.style.display = 'none';
         }
 
-        // Timeline filter functionality
-        document.getElementById('timeline-filter').addEventListener('change', function() {
+        // StoryMap.JS initialization
+        var storymap_data = {{ map_data | tojson | safe }};
+        console.log('StoryMap data:', storymap_data);
+
+        if (typeof VCO !== 'undefined') {
+            try {
+                mapLoading.style.display = 'flex';
+                window.storymap = new VCO.StoryMap('storymap-embed', storymap_data);
+                window.onresize = function(event) {
+                    window.storymap.updateDisplay();
+                }
+                console.log('StoryMap initialized successfully');
+                mapLoading.style.display = 'none';
+            } catch (error) {
+                console.error('Error initializing StoryMap:', error);
+                mapError.textContent = 'Error initializing StoryMap: ' + error.message;
+                mapError.classList.remove('hidden');
+                mapLoading.style.display = 'none';
+            }
+        } else {
+            console.error('StoryMap.js not loaded');
+            mapError.textContent = 'StoryMap.js library not loaded';
+            mapError.classList.remove('hidden');
+            mapLoading.style.display = 'none';
+        }
+
+        // Century filter functionality
+        document.getElementById('century-filter').addEventListener('change', function() {
             var century = this.value;
+            
+            // Filter timeline
             var filteredEvents = timeline_json.events;
             if (century !== 'all') {
                 filteredEvents = timeline_json.events.filter(function(event) {
@@ -108,64 +135,28 @@
             if (window.timeline) {
                 window.timeline.setConfig({events: filteredEvents});
             }
-        });
 
-        // Leaflet.js map initialization
-        var mapData = {{ map_data | tojson | safe }};
-        console.log('Map data:', mapData);
-
-        if (typeof L !== 'undefined') {
-            try {
-                mapLoading.style.display = 'flex';
-                var map = L.map('map').setView([0, 0], 2);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-
-                var markers = [];
-
-                mapData.forEach(function(point) {
-                    var marker = L.marker([point.lat, point.lon]).addTo(map)
-                        .bindPopup('<b>' + point.name + '</b><br>' + point.description);
-                    markers.push({marker: marker, data: point});
-                });
-
-                console.log('Map initialized successfully');
-                mapLoading.style.display = 'none';
-            } catch (error) {
-                console.error('Error initializing map:', error);
-                mapError.textContent = 'Error initializing map: ' + error.message;
-                mapError.classList.remove('hidden');
-                mapLoading.style.display = 'none';
-            }
-        } else {
-            console.error('Leaflet.js not loaded');
-            mapError.textContent = 'Leaflet.js library not loaded';
-            mapError.classList.remove('hidden');
-            mapLoading.style.display = 'none';
-        }
-
-        // Map search functionality
-        document.getElementById('map-search').addEventListener('input', function() {
-            var searchTerm = this.value.toLowerCase();
-            markers.forEach(function(item) {
-                if (item.data.name.toLowerCase().includes(searchTerm)) {
-                    item.marker.addTo(map);
-                    if (searchTerm === item.data.name.toLowerCase()) {
-                        map.setView([item.data.lat, item.data.lon], 10);
-                        item.marker.openPopup();
-                    }
-                } else {
-                    map.removeLayer(item.marker);
+            // Filter StoryMap
+            if (window.storymap) {
+                var filteredFeatures = storymap_data.features;
+                if (century !== 'all') {
+                    filteredFeatures = storymap_data.features.filter(function(feature) {
+                        return feature.properties.century == century;
+                    });
                 }
-            });
+                window.storymap.data = {
+                    type: 'FeatureCollection',
+                    features: filteredFeatures
+                };
+                window.storymap.updateDisplay();
+            }
         });
     });
 
     // Debug logging
     console.log('Timeline data:', {{ timeline_data | tojson | safe }});
-    console.log('Map data:', {{ map_data | tojson | safe }});
+    console.log('StoryMap data:', {{ map_data | tojson | safe }});
     console.log('Timeline.js loaded:', typeof TL !== 'undefined');
-    console.log('Leaflet.js loaded:', typeof L !== 'undefined');
+    console.log('StoryMap.js loaded:', typeof VCO !== 'undefined');
 </script>
 {% endblock %}
