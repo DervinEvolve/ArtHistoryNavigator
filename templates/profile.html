@@ -8,13 +8,29 @@
         <p class="mb-4"><strong>Email:</strong> {{ current_user.email }}</p>
     </div>
 
+    <h2 class="text-2xl font-bold mb-4">Your Interests</h2>
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <ul class="list-disc list-inside mb-4">
+            {% for interest in current_user.get_interests() %}
+                <li>{{ interest }}</li>
+            {% endfor %}
+        </ul>
+        <form action="{{ url_for('add_interest') }}" method="post" class="mb-4">
+            <input type="text" name="interest" placeholder="Add new interest" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <button type="submit" class="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Add Interest
+            </button>
+        </form>
+    </div>
+
     <h2 class="text-2xl font-bold mb-4">Your Learning Paths</h2>
-    {% if current_user.learning_paths %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% if current_user.learning_paths.all() %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {% for path in current_user.learning_paths %}
                 <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
                     <h3 class="text-xl font-bold mb-2">{{ path.title }}</h3>
                     <p class="mb-4">{{ path.description }}</p>
+                    <a href="{{ url_for('view_learning_path', path_id=path.id) }}" class="text-blue-500 hover:text-blue-700">View Path</a>
                 </div>
             {% endfor %}
         </div>
@@ -25,5 +41,35 @@
     <a href="{{ url_for('create_learning_path') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
         Create New Learning Path
     </a>
+
+    <h2 class="text-2xl font-bold mt-8 mb-4">Recommended Learning Paths</h2>
+    {% if recommended_paths %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {% for path in recommended_paths %}
+                <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
+                    <h3 class="text-xl font-bold mb-2">{{ path.title }}</h3>
+                    <p class="mb-4">{{ path.description }}</p>
+                    <p class="text-sm text-gray-600 mb-2">Created by: {{ path.user.username }}</p>
+                    <a href="{{ url_for('view_learning_path', path_id=path.id) }}" class="text-blue-500 hover:text-blue-700">View Path</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="mb-4">No recommended learning paths at the moment.</p>
+    {% endif %}
+
+    <h2 class="text-2xl font-bold mt-8 mb-4">Recommended Resources</h2>
+    {% if recommended_resources %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {% for resource in recommended_resources %}
+                <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
+                    <h3 class="text-xl font-bold mb-2">{{ resource.title }}</h3>
+                    <a href="{{ resource.url }}" target="_blank" class="text-blue-500 hover:text-blue-700">View Resource</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="mb-4">No recommended resources at the moment.</p>
+    {% endif %}
 </div>
 {% endblock %}

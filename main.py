@@ -3,7 +3,8 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_migrate import Migrate
 from urllib.parse import urlparse
 from utils.api_helpers import perform_search
-from models import db, User, LearningPath
+from models import db, User, LearningPath, Resource, BrowsingHistory
+from recommendation_system import recommend_learning_paths, recommend_resources
 import asyncio
 import logging
 import math
@@ -72,7 +73,14 @@ async def api_search():
         return jsonify({"error": "An error occurred while fetching search results. Please try again later."}), 500
 
 @app.route("/details/<source>/<id>")
+@login_required
 def details(source, id):
+    # Update browsing history
+    resource = Resource.query.filter_by(id=id).first()
+    if resource:
+        browsing_history = BrowsingHistory(user=current_user, resource=resource)
+        db.session.add(browsing_history)
+        db.session.commit()
     return render_template("details.html", source=source, id=id)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -123,7 +131,9 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', title='Profile')
+    recommended_paths = recommend_learning_paths(current_user)
+    recommended_resources = recommend_resources(current_user)
+    return render_template('profile.html', title='Profile', recommended_paths=recommended_paths, recommended_resources=recommended_resources)
 
 @app.route('/create_learning_path', methods=['GET', 'POST'])
 @login_required
@@ -147,125 +157,30 @@ def view_learning_path(path_id):
         return redirect(url_for('profile'))
     return render_template('view_learning_path.html', title='View Learning Path', learning_path=learning_path)
 
-@app.route('/visualize')
-def visualize():
-    timeline_data = [
-        {'start_date': {'year': 1914}, 'end_date': {'year': 1918}, 'text': {'headline': 'World War I', 'text': 'The First World War'}},
-        {'start_date': {'year': 1939}, 'end_date': {'year': 1945}, 'text': {'headline': 'World War II', 'text': 'The Second World War'}},
-        {'start_date': {'year': 1969}, 'text': {'headline': 'Moon Landing', 'text': 'Apollo 11 lands on the moon'}},
-        {'start_date': {'year': 1776}, 'text': {'headline': 'American Revolution', 'text': 'Declaration of Independence signed'}},
-        {'start_date': {'year': 1789}, 'end_date': {'year': 1799}, 'text': {'headline': 'French Revolution', 'text': 'Period of radical social and political upheaval in France'}},
-        {'start_date': {'year': 1989}, 'text': {'headline': 'Fall of the Berlin Wall', 'text': 'The fall of the Berlin Wall marks the end of the Cold War'}},
-        {'start_date': {'year': 2001, 'month': 9, 'day': 11}, 'text': {'headline': '9/11 Attacks', 'text': 'Terrorist attacks in the United States'}},
-        {'start_date': {'year': 2008}, 'text': {'headline': 'Global Financial Crisis', 'text': 'Worldwide economic downturn'}},
-        {'start_date': {'year': 2020}, 'text': {'headline': 'COVID-19 Pandemic', 'text': 'Global pandemic caused by the SARS-CoV-2 virus'}}
-    ]
+@app.route('/add_resource/<int:path_id>', methods=['POST'])
+@login_required
+def add_resource(path_id):
+    learning_path = LearningPath.query.get_or_404(path_id)
+    if learning_path.user != current_user:
+        flash('You do not have permission to add resources to this learning path.')
+        return redirect(url_for('profile'))
     
-    map_data = {
-        "storymap": {
-            "slides": [
-                {
-                    "type": "overview",
-                    "text": {
-                        "headline": "Historical Places",
-                        "text": "An overview of important historical locations"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 48.8566,
-                        "lon": 2.3522
-                    },
-                    "text": {
-                        "headline": "Paris",
-                        "text": "Capital of France"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 51.5074,
-                        "lon": -0.1278
-                    },
-                    "text": {
-                        "headline": "London",
-                        "text": "Capital of the United Kingdom"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 40.7128,
-                        "lon": -74.0060
-                    },
-                    "text": {
-                        "headline": "New York",
-                        "text": "Largest city in the United States"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 35.6762,
-                        "lon": 139.6503
-                    },
-                    "text": {
-                        "headline": "Tokyo",
-                        "text": "Capital of Japan"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": -33.8688,
-                        "lon": 151.2093
-                    },
-                    "text": {
-                        "headline": "Sydney",
-                        "text": "Largest city in Australia"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 55.7558,
-                        "lon": 37.6173
-                    },
-                    "text": {
-                        "headline": "Moscow",
-                        "text": "Capital of Russia"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": -22.9068,
-                        "lon": -43.1729
-                    },
-                    "text": {
-                        "headline": "Rio de Janeiro",
-                        "text": "Second-largest city in Brazil"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 30.0444,
-                        "lon": 31.2357
-                    },
-                    "text": {
-                        "headline": "Cairo",
-                        "text": "Capital of Egypt"
-                    }
-                },
-                {
-                    "location": {
-                        "lat": 28.6139,
-                        "lon": 77.2090
-                    },
-                    "text": {
-                        "headline": "New Delhi",
-                        "text": "Capital of India"
-                    }
-                }
-            ]
-        }
-    }
-    
-    return render_template('visualize.html', title='Visualize', timeline_data=timeline_data, map_data=map_data)
+    title = request.form['title']
+    url = request.form['url']
+    resource = Resource(title=title, url=url, learning_path=learning_path)
+    db.session.add(resource)
+    db.session.commit()
+    flash('Resource added successfully!')
+    return redirect(url_for('view_learning_path', path_id=path_id))
+
+@app.route('/add_interest', methods=['POST'])
+@login_required
+def add_interest():
+    interest = request.form['interest']
+    current_user.add_interest(interest)
+    db.session.commit()
+    flash('Interest added successfully!')
+    return redirect(url_for('profile'))
 
 @app.errorhandler(404)
 def page_not_found(e):
