@@ -80,10 +80,10 @@ a, button {
 
 /* Improve search result cards */
 .search-result-card {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
     background-color: #ffffff;
     border-radius: 8px;
     overflow: hidden;
@@ -204,26 +204,33 @@ body {
     }
 }
 
-/* Pagination styles */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 2rem;
+/* Back to Top button */
+#back-to-top {
+    transition: opacity 0.3s ease-in-out;
 }
 
-.pagination button {
-    background-color: #3b82f6;
-    color: #ffffff;
-    padding: 0.5rem 1rem;
-    margin: 0 0.25rem;
-    border-radius: 4px;
-    font-weight: 500;
+#back-to-top.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
-.pagination button:disabled {
-    background-color: #9ca3af;
-    cursor: not-allowed;
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-in-out;
 }
 
 /* Sidebar styles */
@@ -256,23 +263,4 @@ body {
 
 .search-history a:hover {
     text-decoration: underline;
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.fade-in {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes slideIn {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.slide-in {
-    animation: slideIn 0.3s ease-in-out;
 }

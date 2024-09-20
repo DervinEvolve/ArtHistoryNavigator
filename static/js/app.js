@@ -1,23 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('search-results');
-    const detailsContainer = document.getElementById('details-container');
     const modal = document.getElementById('modal');
     const closeModal = document.getElementById('close-modal');
-    const paginationContainer = document.getElementById('pagination');
-    const searchHistoryList = document.getElementById('search-history');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const backToTopButton = document.getElementById('back-to-top');
+
+    let currentQuery = '';
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMoreResults = true;
 
     if (searchResults) {
         const query = new URLSearchParams(window.location.search).get('q');
         if (query) {
+            currentQuery = query;
             fetchSearchResults(query);
             addToSearchHistory(query);
         }
-    }
-
-    if (detailsContainer) {
-        const source = window.location.pathname.split('/')[2];
-        const id = window.location.pathname.split('/')[3];
-        fetchDetails(source, id);
     }
 
     if (closeModal) {
@@ -26,14 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Close modal when clicking outside the content
     window.addEventListener('click', (event) => {
         if (event.target === modal) {
             modal.classList.add('hidden');
         }
     });
 
-    // Event listener for Read more buttons
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('read-more-btn')) {
             const source = e.target.dataset.source;
@@ -41,62 +38,61 @@ document.addEventListener('DOMContentLoaded', () => {
             showModal(source, content);
         }
     });
+
+    window.addEventListener('scroll', () => {
+        if (isLoading || !hasMoreResults) return;
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+            fetchSearchResults(currentQuery, currentPage + 1);
+        }
+
+        if (window.scrollY > 300) {
+            backToTopButton.classList.remove('hidden');
+        } else {
+            backToTopButton.classList.add('hidden');
+        }
+    });
+
+    backToTopButton.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 });
 
 async function fetchSearchResults(query, page = 1) {
-    const wikipediaResults = document.querySelector('#wikipedia-results ul');
-    const internetArchiveResults = document.querySelector('#internet-archive-results ul');
-    const metMuseumResults = document.querySelector('#met-museum-results ul');
-    const noResultsMessage = document.getElementById('no-results');
-    const searchResults = document.getElementById('search-results');
-    const paginationContainer = document.getElementById('pagination');
-
-    const loadingIndicators = document.querySelectorAll('.loading');
-    loadingIndicators.forEach(indicator => {
-        indicator.classList.remove('hidden');
-        indicator.innerHTML = '<p class="text-center">Loading...</p>';
-    });
+    if (isLoading || !hasMoreResults) return;
+    isLoading = true;
+    showLoadingIndicator();
 
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
 
-        const hasWikipediaResults = updateResultSection(wikipediaResults, data.results.wikipedia, 'wikipedia');
-        const hasInternetArchiveResults = updateResultSection(internetArchiveResults, data.results.internet_archive, 'internet_archive');
-        const hasMetMuseumResults = updateResultSection(metMuseumResults, data.results.met_museum, 'met_museum');
+        updateResultSections(data.results);
+        hasMoreResults = page < data.total_pages;
+        currentPage = page;
 
-        if (!hasWikipediaResults && !hasInternetArchiveResults && !hasMetMuseumResults) {
-            noResultsMessage.classList.remove('hidden');
-            searchResults.classList.add('hidden');
-            paginationContainer.classList.add('hidden');
+        if (page === 1) {
+            initializeMasonry();
         } else {
-            noResultsMessage.classList.add('hidden');
-            searchResults.classList.remove('hidden');
-            updatePagination(data.current_page, data.total_pages, query);
+            updateMasonry();
         }
     } catch (error) {
         console.error('Error fetching search results:', error);
-        const errorMessage = document.createElement('p');
-        errorMessage.textContent = 'An error occurred while fetching search results. Please try again later.';
-        errorMessage.classList.add('text-red-600', 'font-semibold', 'mt-4');
-        searchResults.prepend(errorMessage);
+        showErrorMessage();
     } finally {
-        loadingIndicators.forEach(indicator => indicator.classList.add('hidden'));
+        isLoading = false;
+        hideLoadingIndicator();
     }
 }
 
-function updateResultSection(container, results, source) {
-    container.innerHTML = '';
-    if (results.length === 0) {
-        container.innerHTML = '<p class="text-gray-600">No results found</p>';
-        return false;
-    }
-    const resultsHTML = results.map(result => createResultHTML(result, source)).join('');
-    container.innerHTML = resultsHTML;
-    return true;
+function updateResultSections(results) {
+    const searchResults = document.getElementById('search-results');
+    Object.entries(results).forEach(([source, items]) => {
+        items.forEach(item => {
+            const resultHtml = createResultHTML(item, source);
+            searchResults.insertAdjacentHTML('beforeend', resultHtml);
+        });
+    });
 }
 
 function createResultHTML(result, source) {
@@ -105,12 +101,36 @@ function createResultHTML(result, source) {
         return text.substr(0, maxLength) + '...';
     };
 
+    let cardContent = '';
+    let modalContent = '';
+
+    switch (source) {
+        case 'wikipedia':
+        case 'internet_archive':
+            cardContent = `
+                <h3>${result.title}</h3>
+                <p>${truncateText(result.snippet || result.description || '', 100)}</p>
+            `;
+            modalContent = JSON.stringify({
+                title: result.title,
+                content: result.snippet || result.description,
+                url: source === 'wikipedia' ? `https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}` : `https://archive.org/details/${result.identifier}`
+            });
+            break;
+        case 'met_museum':
+            cardContent = `
+                <img src="${result.primaryImageSmall}" alt="${result.title}" class="lazy-load" data-src="${result.primaryImageSmall}">
+                <h3>${result.title}</h3>
+                <p>${truncateText(result.artistDisplayName, 50)}</p>
+            `;
+            modalContent = JSON.stringify(result);
+            break;
+    }
+
     return `
-        <div class="search-result-card slide-in">
-            ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="lazy-load" data-src="${result.primaryImageSmall}">` : ''}
-            <h3>${result.title}</h3>
-            <p>${truncateText(result.snippet || result.description || '', 100)}</p>
-            <button class="read-more-btn" data-source="${source}" data-content='${JSON.stringify(result)}'>Read More</button>
+        <div class="search-result-card fade-in">
+            ${cardContent}
+            <button class="read-more-btn" data-source="${source}" data-content='${modalContent}'>Read More</button>
         </div>
     `;
 }
@@ -124,15 +144,15 @@ function showModal(source, content) {
         case 'wikipedia':
             htmlContent = `
                 <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <p>${content.snippet}</p>
-                <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(content.title)}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
+                <p>${content.content}</p>
+                <a href="${content.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
             `;
             break;
         case 'internet_archive':
             htmlContent = `
                 <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <p>${content.description || 'No description available'}</p>
-                <a href="https://archive.org/details/${content.identifier}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
+                <p>${content.content}</p>
+                <a href="${content.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
             `;
             break;
         case 'met_museum':
@@ -151,31 +171,32 @@ function showModal(source, content) {
     modal.classList.remove('hidden');
 }
 
-function updatePagination(currentPage, totalPages, query) {
-    const paginationContainer = document.getElementById('pagination');
-    paginationContainer.innerHTML = '';
-    paginationContainer.classList.remove('hidden');
+function showLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    loadingIndicator.classList.remove('hidden');
+}
 
-    const createPageButton = (page, text) => {
-        const button = document.createElement('button');
-        button.textContent = text;
-        button.classList.add('px-3', 'py-1', 'mx-1', 'rounded');
-        button.disabled = page === currentPage;
-        button.addEventListener('click', () => fetchSearchResults(query, page));
-        return button;
-    };
+function hideLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    loadingIndicator.classList.add('hidden');
+}
 
-    if (currentPage > 1) {
-        paginationContainer.appendChild(createPageButton(currentPage - 1, 'Previous'));
-    }
+function showErrorMessage() {
+    const searchResults = document.getElementById('search-results');
+    const errorMessage = document.createElement('p');
+    errorMessage.textContent = 'An error occurred while fetching search results. Please try again later.';
+    errorMessage.classList.add('text-red-600', 'font-semibold', 'mt-4');
+    searchResults.appendChild(errorMessage);
+}
 
-    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-        paginationContainer.appendChild(createPageButton(i, i.toString()));
-    }
+function initializeMasonry() {
+    const searchResults = document.getElementById('search-results');
+    searchResults.innerHTML = '';
+    // You can initialize a masonry layout library here if needed
+}
 
-    if (currentPage < totalPages) {
-        paginationContainer.appendChild(createPageButton(currentPage + 1, 'Next'));
-    }
+function updateMasonry() {
+    // Update the masonry layout if you're using a library
 }
 
 function addToSearchHistory(query) {
@@ -213,6 +234,5 @@ function lazyLoadImages() {
     });
 }
 
-// Call lazyLoadImages when the page loads and after fetching search results
 document.addEventListener('DOMContentLoaded', lazyLoadImages);
 window.addEventListener('load', lazyLoadImages);
