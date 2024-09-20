@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 from aiohttp import ClientTimeout
 from flask import jsonify
+import os
 
 async def fetch_data(session, url, params=None):
     try:
@@ -53,15 +54,40 @@ async def search_met_museum(query):
         objects = await asyncio.gather(*object_tasks)
         return [obj for obj in objects if obj]
 
+async def search_rijksmuseum(query):
+    url = "https://www.rijksmuseum.nl/api/en/collection"
+    params = {
+        "key": os.environ.get("RIJKSMUSEUM_API_KEY"),
+        "q": query,
+        "format": "json",
+        "ps": 5  # Limit to 5 results
+    }
+    async with aiohttp.ClientSession() as session:
+        data = await fetch_data(session, url, params)
+        return data["artObjects"] if data and "artObjects" in data else []
+
+async def search_harvard_art_museums(query):
+    url = "https://api.harvardartmuseums.org/object"
+    params = {
+        "apikey": os.environ.get("HARVARD_ART_MUSEUMS_API_KEY"),
+        "q": query,
+        "size": 5  # Limit to 5 results
+    }
+    async with aiohttp.ClientSession() as session:
+        data = await fetch_data(session, url, params)
+        return data["records"] if data and "records" in data else []
+
 async def perform_search(query):
     tasks = [
         search_wikipedia(query),
         search_internet_archive(query),
-        search_met_museum(query)
+        search_met_museum(query),
+        search_rijksmuseum(query),
+        search_harvard_art_museums(query)
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
-    sources = ['wikipedia', 'internet_archive', 'met_museum']
+    sources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums']
     search_results = {}
     errors = {}
 

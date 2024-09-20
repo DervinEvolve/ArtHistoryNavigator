@@ -4,7 +4,7 @@ let currentQuery = '';
 let currentPage = 1;
 let totalResults = 0;
 let remainingResults = 0;
-let visibleSources = ['wikipedia', 'internet_archive', 'met_museum'];
+let visibleSources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums'];
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM content loaded');
@@ -148,7 +148,7 @@ function updateResultSections(results, page) {
         searchResults.innerHTML = '';
     }
 
-    const sources = ['wikipedia', 'internet_archive', 'met_museum'];
+    const sources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums'];
     sources.forEach(source => {
         if (results[source] && results[source].length > 0) {
             console.log(`Adding results for ${source}`);
@@ -229,6 +229,20 @@ function createResultHTML(result, source) {
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName || '', 50)}</p>
             `;
             break;
+        case 'rijksmuseum':
+            iconClass = 'rijksmuseum-icon';
+            cardContent = `
+                <img src="${result.webImage.url}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.webImage.url}">
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.principalOrFirstMaker || '', 50)}</p>
+            `;
+            break;
+        case 'harvard_art_museums':
+            iconClass = 'harvard-art-museums-icon';
+            cardContent = `
+                <img src="${result.primaryimageurl}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryimageurl}">
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.people ? result.people[0].name : '', 50)}</p>
+            `;
+            break;
     }
 
     console.log('Generated cardContent:', cardContent);
@@ -300,6 +314,26 @@ function showModal(source, content) {
                     <p class="mb-2"><strong>Date:</strong> ${parsedContent.objectDate || 'N/A'}</p>
                     <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
                     <a href="${parsedContent.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
+                `;
+                break;
+            case 'rijksmuseum':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
+                    <img src="${parsedContent.webImage.url}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
+                    <p class="mb-2"><strong>Artist:</strong> ${parsedContent.principalOrFirstMaker || 'Unknown'}</p>
+                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.dating.presentingDate || 'N/A'}</p>
+                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.materials.join(', ') || 'N/A'}</p>
+                    <a href="${parsedContent.links.web}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Rijksmuseum Website</a>
+                `;
+                break;
+            case 'harvard_art_museums':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
+                    <img src="${parsedContent.primaryimageurl}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
+                    <p class="mb-2"><strong>Artist:</strong> ${parsedContent.people ? parsedContent.people[0].name : 'Unknown'}</p>
+                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.dated || 'N/A'}</p>
+                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
+                    <a href="${parsedContent.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Harvard Art Museums Website</a>
                 `;
                 break;
             default:
