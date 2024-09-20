@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Historical Data Visualization</h1>
+
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Interactive Timeline</h2>
+        <div id="timeline-embed" style="width: 100%; height: 600px"></div>
+    </div>
+
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Interactive Map</h2>
+        <div id="map" style="width: 100%; height: 400px"></div>
+    </div>
+</div>
+
+<script>
+    // Timeline.js initialization
+    var timeline_json = {
+        "events": {{ timeline_data | tojson | safe }}
+    };
+
+    window.timeline = new TL.Timeline('timeline-embed', timeline_json);
+
+    // Leaflet.js map initialization
+    var map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var mapData = {{ map_data | tojson | safe }};
+    mapData.forEach(function(point) {
+        L.marker([point.lat, point.lon]).addTo(map)
+            .bindPopup('<b>' + point.name + '</b><br>' + point.description);
+    });
+</script>
+{% endblock %}

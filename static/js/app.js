@@ -82,6 +82,30 @@ document.addEventListener('DOMContentLoaded', () => {
             filterResults();
         });
     });
+
+    // Initialize timeline if on the visualize page
+    const timelineEmbed = document.getElementById('timeline-embed');
+    if (timelineEmbed && window.TL) {
+        console.log('Initializing timeline');
+        const timelineJson = JSON.parse(timelineEmbed.dataset.timeline);
+        window.timeline = new TL.Timeline('timeline-embed', timelineJson);
+    }
+
+    // Initialize map if on the visualize page
+    const mapElement = document.getElementById('map');
+    if (mapElement && window.L) {
+        console.log('Initializing map');
+        const mapData = JSON.parse(mapElement.dataset.map);
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        mapData.forEach(function(point) {
+            L.marker([point.lat, point.lon]).addTo(map)
+                .bindPopup('<b>' + point.name + '</b><br>' + point.description);
+        });
+    }
 });
 
 async function fetchSearchResults(query, page = 1) {

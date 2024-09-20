@@ -6,6 +6,8 @@
     <title>{% block title %}History & Art History Explorer{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.knightlab.com/libs/timeline3/latest/css/timeline.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <header class="bg-blue-600 text-white p-4">
@@ -18,6 +20,7 @@
                 <ul class="flex space-x-4">
                     <li><a href="/" class="hover:underline">Home</a></li>
                     <li><a href="/search" class="hover:underline">Search</a></li>
+                    <li><a href="/visualize" class="hover:underline">Visualize</a></li>
                     {% if current_user.is_authenticated %}
                         <li><a href="{{ url_for('profile') }}" class="hover:underline">Profile</a></li>
                         <li><a href="{{ url_for('logout') }}" class="hover:underline">Logout</a></li>
@@ -50,5 +53,7 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="https://cdn.knightlab.com/libs/timeline3/latest/js/timeline.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 </body>
 </html>

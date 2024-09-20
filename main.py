@@ -147,6 +147,23 @@ def view_learning_path(path_id):
         return redirect(url_for('profile'))
     return render_template('view_learning_path.html', title='View Learning Path', learning_path=learning_path)
 
+@app.route('/visualize')
+def visualize():
+    # Sample data for timeline and map
+    timeline_data = [
+        {'start_date': {'year': 1914}, 'end_date': {'year': 1918}, 'text': {'headline': 'World War I', 'text': 'The First World War'}},
+        {'start_date': {'year': 1939}, 'end_date': {'year': 1945}, 'text': {'headline': 'World War II', 'text': 'The Second World War'}},
+        {'start_date': {'year': 1969}, 'text': {'headline': 'Moon Landing', 'text': 'Apollo 11 lands on the moon'}}
+    ]
+    
+    map_data = [
+        {'lat': 48.8566, 'lon': 2.3522, 'name': 'Paris', 'description': 'Capital of France'},
+        {'lat': 51.5074, 'lon': -0.1278, 'name': 'London', 'description': 'Capital of the United Kingdom'},
+        {'lat': 40.7128, 'lon': -74.0060, 'name': 'New York', 'description': 'Largest city in the United States'}
+    ]
+    
+    return render_template('visualize.html', title='Visualize', timeline_data=timeline_data, map_data=map_data)
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
