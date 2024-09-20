@@ -1,5 +1,30 @@
-
 {% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    .loading-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    .loading-indicator:after {
+        content: " ";
+        display: block;
+        width: 64px;
+        height: 64px;
+        margin: 8px;
+        border-radius: 50%;
+        border: 6px solid #3b82f6;
+        border-color: #3b82f6 transparent #3b82f6 transparent;
+        animation: loading-indicator 1.2s linear infinite;
+    }
+    @keyframes loading-indicator {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
@@ -17,6 +42,8 @@
                 <option value="21">21st Century</option>
             </select>
         </div>
+        <div id="timeline-loading" class="loading-indicator"></div>
+        <div id="timeline-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"></div>
         <div id="timeline-embed" style="width: 100%; height: 600px"></div>
     </div>
 
@@ -26,60 +53,119 @@
             <label for="map-search" class="block text-sm font-medium text-gray-700">Search for a location:</label>
             <input type="text" id="map-search" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Enter a city name">
         </div>
+        <div id="map-loading" class="loading-indicator"></div>
+        <div id="map-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"></div>
         <div id="map" style="width: 100%; height: 400px"></div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
-    // Timeline.js initialization
-    var timeline_json = {
-        "events": {{ timeline_data | tojson | safe }}
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM content loaded');
+        
+        const timelineLoading = document.getElementById('timeline-loading');
+        const timelineError = document.getElementById('timeline-error');
+        const mapLoading = document.getElementById('map-loading');
+        const mapError = document.getElementById('map-error');
 
-    window.timeline = new TL.Timeline('timeline-embed', timeline_json);
+        // Timeline.js initialization
+        var timeline_json = {
+            "events": {{ timeline_data | tojson | safe }}
+        };
+        console.log('Timeline data:', timeline_json);
 
-    // Timeline filter functionality
-    document.getElementById('timeline-filter').addEventListener('change', function() {
-        var century = this.value;
-        var filteredEvents = timeline_json.events;
-        if (century !== 'all') {
-            filteredEvents = timeline_json.events.filter(function(event) {
-                var year = event.start_date.year;
-                return Math.floor(year / 100) + 1 == century;
-            });
+        if (typeof TL !== 'undefined') {
+            try {
+                timelineLoading.style.display = 'flex';
+                window.timeline = new TL.Timeline('timeline-embed', timeline_json);
+                console.log('Timeline initialized successfully');
+                timelineLoading.style.display = 'none';
+            } catch (error) {
+                console.error('Error initializing timeline:', error);
+                timelineError.textContent = 'Error initializing timeline: ' + error.message;
+                timelineError.classList.remove('hidden');
+                timelineLoading.style.display = 'none';
+            }
+        } else {
+            console.error('Timeline.js not loaded');
+            timelineError.textContent = 'Timeline.js library not loaded';
+            timelineError.classList.remove('hidden');
+            timelineLoading.style.display = 'none';
         }
-        window.timeline.setConfig({events: filteredEvents});
-    });
 
-    // Leaflet.js map initialization
-    var map = L.map('map').setView([0, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    var mapData = {{ map_data | tojson | safe }};
-    var markers = [];
-
-    mapData.forEach(function(point) {
-        var marker = L.marker([point.lat, point.lon]).addTo(map)
-            .bindPopup('<b>' + point.name + '</b><br>' + point.description);
-        markers.push({marker: marker, data: point});
-    });
-
-    // Map search functionality
-    document.getElementById('map-search').addEventListener('input', function() {
-        var searchTerm = this.value.toLowerCase();
-        markers.forEach(function(item) {
-            if (item.data.name.toLowerCase().includes(searchTerm)) {
-                item.marker.addTo(map);
-                if (searchTerm === item.data.name.toLowerCase()) {
-                    map.setView([item.data.lat, item.data.lon], 10);
-                    item.marker.openPopup();
-                }
-            } else {
-                map.removeLayer(item.marker);
+        // Timeline filter functionality
+        document.getElementById('timeline-filter').addEventListener('change', function() {
+            var century = this.value;
+            var filteredEvents = timeline_json.events;
+            if (century !== 'all') {
+                filteredEvents = timeline_json.events.filter(function(event) {
+                    var year = event.start_date.year;
+                    return Math.floor(year / 100) + 1 == century;
+                });
+            }
+            if (window.timeline) {
+                window.timeline.setConfig({events: filteredEvents});
             }
         });
+
+        // Leaflet.js map initialization
+        var mapData = {{ map_data | tojson | safe }};
+        console.log('Map data:', mapData);
+
+        if (typeof L !== 'undefined') {
+            try {
+                mapLoading.style.display = 'flex';
+                var map = L.map('map').setView([0, 0], 2);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                var markers = [];
+
+                mapData.forEach(function(point) {
+                    var marker = L.marker([point.lat, point.lon]).addTo(map)
+                        .bindPopup('<b>' + point.name + '</b><br>' + point.description);
+                    markers.push({marker: marker, data: point});
+                });
+
+                console.log('Map initialized successfully');
+                mapLoading.style.display = 'none';
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                mapError.textContent = 'Error initializing map: ' + error.message;
+                mapError.classList.remove('hidden');
+                mapLoading.style.display = 'none';
+            }
+        } else {
+            console.error('Leaflet.js not loaded');
+            mapError.textContent = 'Leaflet.js library not loaded';
+            mapError.classList.remove('hidden');
+            mapLoading.style.display = 'none';
+        }
+
+        // Map search functionality
+        document.getElementById('map-search').addEventListener('input', function() {
+            var searchTerm = this.value.toLowerCase();
+            markers.forEach(function(item) {
+                if (item.data.name.toLowerCase().includes(searchTerm)) {
+                    item.marker.addTo(map);
+                    if (searchTerm === item.data.name.toLowerCase()) {
+                        map.setView([item.data.lat, item.data.lon], 10);
+                        item.marker.openPopup();
+                    }
+                } else {
+                    map.removeLayer(item.marker);
+                }
+            });
+        });
     });
+
+    // Debug logging
+    console.log('Timeline data:', {{ timeline_data | tojson | safe }});
+    console.log('Map data:', {{ map_data | tojson | safe }});
+    console.log('Timeline.js loaded:', typeof TL !== 'undefined');
+    console.log('Leaflet.js loaded:', typeof L !== 'undefined');
 </script>
 {% endblock %}
