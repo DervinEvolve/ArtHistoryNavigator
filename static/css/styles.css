@@ -311,9 +311,14 @@ body {
     border-radius: 9999px;
     font-weight: 500;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    cursor: pointer;
 }
 
 .filter-btn:hover, .filter-btn.active {
     background-color: #3b82f6;
     color: #ffffff;
+}
+
+.filter-btn .icon {
+    margin-right: 0.5rem;
 }

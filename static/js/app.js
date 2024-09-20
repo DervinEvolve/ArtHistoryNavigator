@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('read-more-btn')) {
             const source = e.target.dataset.source;
-            const content = JSON.parse(e.target.dataset.content);
+            const content = e.target.dataset.content;
             showModal(source, content);
         }
     });
@@ -176,38 +176,39 @@ function createResultHTML(result, source) {
             cardContent = `
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || '', 150)}</p>
             `;
-            modalContent = JSON.stringify({
-                title: result.title,
-                content: result.snippet,
-                url: `https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}`
-            });
             break;
         case 'internet_archive':
             iconClass = 'internet-archive-icon';
             cardContent = `
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.description || '', 150)}</p>
             `;
-            modalContent = JSON.stringify({
-                title: result.title,
-                content: result.description,
-                url: `https://archive.org/details/${result.identifier}`
-            });
             break;
         case 'met_museum':
             iconClass = 'met-museum-icon';
             cardContent = `
                 <img src="${result.primaryImageSmall}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryImageSmall}">
-                <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName, 50)}</p>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName || '', 50)}</p>
             `;
-            modalContent = JSON.stringify(result);
             break;
+    }
+
+    try {
+        modalContent = JSON.stringify(result, (key, value) => {
+            if (typeof value === 'string') {
+                return value.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+            }
+            return value;
+        });
+    } catch (error) {
+        console.error('Error stringifying result:', error);
+        modalContent = JSON.stringify({ error: 'Unable to display full content' });
     }
 
     return `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
             <div class="flex items-center mb-2">
                 <span class="icon ${iconClass} mr-2"></span>
-                <h3 class="text-lg font-semibold">${result.title}</h3>
+                <h3 class="text-lg font-semibold">${result.title || 'No title'}</h3>
             </div>
             ${cardContent}
             <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>
@@ -220,31 +221,39 @@ function showModal(source, content) {
     const modalContent = document.getElementById('modal-content');
 
     let htmlContent = '';
-    switch (source) {
-        case 'wikipedia':
-            htmlContent = `
-                <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <p class="mb-4">${content.content}</p>
-                <a href="${content.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
-            `;
-            break;
-        case 'internet_archive':
-            htmlContent = `
-                <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <p class="mb-4">${content.content}</p>
-                <a href="${content.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
-            `;
-            break;
-        case 'met_museum':
-            htmlContent = `
-                <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
-                <img src="${content.primaryImage}" alt="${content.title}" class="w-full max-h-96 object-contain mb-4">
-                <p class="mb-2"><strong>Artist:</strong> ${content.artistDisplayName || 'Unknown'}</p>
-                <p class="mb-2"><strong>Date:</strong> ${content.objectDate || 'N/A'}</p>
-                <p class="mb-4"><strong>Medium:</strong> ${content.medium || 'N/A'}</p>
-                <a href="${content.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
-            `;
-            break;
+    try {
+        const parsedContent = JSON.parse(content);
+        switch (source) {
+            case 'wikipedia':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
+                    <p class="mb-4">${parsedContent.snippet || ''}</p>
+                    <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(parsedContent.title)}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
+                `;
+                break;
+            case 'internet_archive':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
+                    <p class="mb-4">${parsedContent.description || ''}</p>
+                    <a href="https://archive.org/details/${parsedContent.identifier}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
+                `;
+                break;
+            case 'met_museum':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
+                    <img src="${parsedContent.primaryImage}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
+                    <p class="mb-2"><strong>Artist:</strong> ${parsedContent.artistDisplayName || 'Unknown'}</p>
+                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.objectDate || 'N/A'}</p>
+                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
+                    <a href="${parsedContent.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
+                `;
+                break;
+            default:
+                htmlContent = '<p>Error displaying content. Please try again.</p>';
+        }
+    } catch (error) {
+        console.error('Error parsing modal content:', error);
+        htmlContent = '<p>Error displaying content. Please try again.</p>';
     }
 
     modalContent.innerHTML = htmlContent;
