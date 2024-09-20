@@ -175,6 +175,7 @@ function updateLoadMoreButton() {
 
 function createResultHTML(result, source) {
     console.log('Creating result HTML for:', result, 'Source:', source);
+    
     const truncateText = (text, maxLength) => {
         if (text.length <= maxLength) return text;
         return text.substr(0, maxLength) + '...';
@@ -206,6 +207,8 @@ function createResultHTML(result, source) {
             break;
     }
 
+    console.log('Generated cardContent:', cardContent);
+
     try {
         modalContent = JSON.stringify(result, (key, value) => {
             if (typeof value === 'string') {
@@ -218,9 +221,9 @@ function createResultHTML(result, source) {
         modalContent = JSON.stringify({ error: 'Unable to display full content' });
     }
 
-    let buttonHtml = `<button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>`;
+    console.log('Generated modalContent:', modalContent);
 
-    console.log('Button HTML:', buttonHtml);
+    const buttonHtml = `<button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>`;
 
     const cardHtml = `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
@@ -233,7 +236,12 @@ function createResultHTML(result, source) {
         </div>
     `;
 
-    console.log('Generated card HTML:', cardHtml);
+    console.log('Final cardHtml:', cardHtml);
+
+    if (!cardHtml.includes('read-more-btn')) {
+        console.error('Read More button is missing from the card HTML');
+    }
+
     return cardHtml;
 }
 
