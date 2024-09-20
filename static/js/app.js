@@ -42,18 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    window.addEventListener('scroll', () => {
-        if (isLoading || !hasMoreResults) return;
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-            fetchSearchResults(currentQuery, currentPage + 1);
-        }
-
-        if (window.scrollY > 300) {
-            backToTopButton.classList.remove('hidden');
-        } else {
-            backToTopButton.classList.add('hidden');
-        }
+    const loadMoreButton = document.createElement('button');
+    loadMoreButton.id = 'load-more-button';
+    loadMoreButton.textContent = 'Load More';
+    loadMoreButton.classList.add('bg-blue-500', 'text-white', 'px-4', 'py-2', 'rounded', 'mt-4', 'hidden');
+    loadMoreButton.addEventListener('click', () => {
+        fetchSearchResults(currentQuery, currentPage + 1);
     });
+    searchResults.after(loadMoreButton);
 
     backToTopButton.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -62,8 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchSearchResults(query, page = 1) {
     console.log('fetchSearchResults called with query:', query, 'page:', page);
-    if (isLoading || !hasMoreResults) {
-        console.log('Skipping fetch: isLoading =', isLoading, 'hasMoreResults =', hasMoreResults);
+    if (isLoading) {
+        console.log('Already loading, skipping fetch');
         return;
     }
     isLoading = true;
@@ -76,15 +72,10 @@ async function fetchSearchResults(query, page = 1) {
         const data = await response.json();
         console.log('API response data:', data);
 
-        if (data.results && Object.keys(data.results).some(key => data.results[key].length > 0)) {
-            console.log('Results found, updating sections');
-            updateResultSections(data.results);
-            hasMoreResults = page < data.total_pages;
-            currentPage = page;
-        } else {
-            console.log('No results found');
-            showNoResultsMessage();
-        }
+        updateResultSections(data.results, page);
+        hasMoreResults = page < data.total_pages;
+        currentPage = page;
+        updateLoadMoreButton();
     } catch (error) {
         console.error('Error fetching search results:', error);
         showErrorMessage(error.message);
@@ -94,16 +85,32 @@ async function fetchSearchResults(query, page = 1) {
     }
 }
 
-function updateResultSections(results) {
+function updateResultSections(results, page) {
     console.log('Updating result sections with:', results);
     const searchResults = document.getElementById('search-results');
+    let resultsAdded = false;
+
     Object.entries(results).forEach(([source, items]) => {
         items.forEach(item => {
             const resultHtml = createResultHTML(item, source);
             console.log('Generated HTML for result:', resultHtml);
             searchResults.insertAdjacentHTML('beforeend', resultHtml);
+            resultsAdded = true;
         });
     });
+
+    if (!resultsAdded && page === 1) {
+        showNoResultsMessage();
+    }
+}
+
+function updateLoadMoreButton() {
+    const loadMoreButton = document.getElementById('load-more-button');
+    if (hasMoreResults) {
+        loadMoreButton.classList.remove('hidden');
+    } else {
+        loadMoreButton.classList.add('hidden');
+    }
 }
 
 function createResultHTML(result, source) {
