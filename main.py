@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 from utils.api_helpers import perform_search
 import asyncio
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 @app.route("/")
 def index():
@@ -20,7 +22,8 @@ async def api_search():
         results = await perform_search(query)
         return jsonify(results)
     except Exception as e:
-        return jsonify({"error": f"An error occurred while fetching search results: {str(e)}"}), 500
+        logging.error(f"Error in api_search: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching search results. Please try again later."}), 500
 
 @app.route("/details/<source>/<id>")
 def details(source, id):
