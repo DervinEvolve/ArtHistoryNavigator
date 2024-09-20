@@ -75,7 +75,6 @@ async def api_search():
 @app.route("/details/<source>/<id>")
 @login_required
 def details(source, id):
-    # Update browsing history
     resource = Resource.query.filter_by(id=id).first()
     if resource:
         update_user_history(current_user.id, resource.id)
@@ -109,16 +108,36 @@ def register():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
+    
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
-        if user is None or not user.check_password(request.form['password']):
-            flash('Invalid username or password')
-            return redirect(url_for('login'))
-        login_user(user, remember=request.form.get('remember_me'))
-        next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
-            next_page = url_for('index')
-        return redirect(next_page)
+        try:
+            username = request.form['username']
+            password = request.form['password']
+            logging.info(f"Login attempt for user: {username}")
+            
+            user = User.query.filter_by(username=username).first()
+            if user is None:
+                logging.warning(f"Login failed: User {username} not found")
+                flash('Invalid username or password')
+                return redirect(url_for('login'))
+            
+            if not user.check_password(password):
+                logging.warning(f"Login failed: Incorrect password for user {username}")
+                flash('Invalid username or password')
+                return redirect(url_for('login'))
+            
+            login_user(user, remember=request.form.get('remember_me'))
+            logging.info(f"User {username} logged in successfully")
+            
+            next_page = request.args.get('next')
+            if not next_page or urlparse(next_page).netloc != '':
+                next_page = url_for('index')
+            return redirect(next_page)
+        
+        except Exception as e:
+            logging.error(f"Login error: {str(e)}")
+            return render_template('500.html'), 500
+    
     return render_template('login.html', title='Sign In')
 
 @app.route('/logout')

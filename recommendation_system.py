@@ -1,54 +1,47 @@
-from flask_login import current_user
-from models import User, LearningPath, Resource
+from models import db, User, Resource, BrowsingHistory
 from sqlalchemy import func
 from collections import Counter
 
-def get_user_interests(user_id):
+def get_recommendations(user_id, limit=10):
     user = User.query.get(user_id)
     if not user:
         return []
-    
-    # Combine interests from learning paths and resources
-    interests = []
-    for path in user.learning_paths:
-        interests.extend(path.tags.split(','))
-    for resource in user.resources:
-        interests.extend(resource.tags.split(','))
-    
-    return [interest.strip().lower() for interest in interests if interest.strip()]
 
-def get_recommendations(user_id, limit=5):
-    user_interests = get_user_interests(user_id)
-    if not user_interests:
-        return []
-    
-    # Find resources that match user interests
-    matching_resources = Resource.query.filter(
-        func.lower(Resource.tags).contains(func.lower(interest))
-        for interest in user_interests
-    ).all()
-    
+    # Get user interests
+    user_interests = set(user.interests.split(',')) if user.interests else set()
+
+    # Get user's browsing history
+    browsing_history = BrowsingHistory.query.filter_by(user_id=user_id).order_by(BrowsingHistory.timestamp.desc()).limit(20).all()
+    viewed_resource_ids = [history.resource_id for history in browsing_history]
+
+    # Get resources related to user interests
+    interest_resources = Resource.query.filter(Resource.tags.contains(func.any(user_interests))).all()
+
+    # Combine interest-based and history-based resources
+    all_resources = interest_resources + Resource.query.filter(Resource.id.in_(viewed_resource_ids)).all()
+
     # Count occurrences of each resource
-    resource_counts = Counter(matching_resources)
-    
-    # Sort resources by relevance (number of matching tags)
-    sorted_resources = sorted(resource_counts.items(), key=lambda x: x[1], reverse=True)
-    
-    # Return top N recommendations
+    resource_counts = Counter(all_resources)
+
+    # Sort resources by count (descending) and then by id (ascending)
+    sorted_resources = sorted(resource_counts.items(), key=lambda x: (-x[1], x[0].id))
+
+    # Return the top 'limit' resources
     return [resource for resource, count in sorted_resources[:limit]]
 
 def update_user_history(user_id, resource_id):
-    user = User.query.get(user_id)
+    # Check if the resource exists
     resource = Resource.query.get(resource_id)
-    
-    if user and resource and resource not in user.resources:
-        user.resources.append(resource)
-        db.session.commit()
+    if not resource:
+        return False
 
-# Add this function to the routes in main.py
-def get_recommendations_route():
-    if current_user.is_authenticated:
-        recommendations = get_recommendations(current_user.id)
-        return jsonify([resource.to_dict() for resource in recommendations])
+    # Add or update the browsing history
+    history = BrowsingHistory.query.filter_by(user_id=user_id, resource_id=resource_id).first()
+    if history:
+        history.timestamp = func.now()
     else:
-        return jsonify([])
+        history = BrowsingHistory(user_id=user_id, resource_id=resource_id)
+        db.session.add(history)
+
+    db.session.commit()
+    return True
