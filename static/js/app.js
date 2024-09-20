@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('search-results');
     const detailsContainer = document.getElementById('details-container');
+    const modal = document.getElementById('modal');
+    const closeModal = document.getElementById('close-modal');
 
     if (searchResults) {
         const query = new URLSearchParams(window.location.search).get('q');
@@ -14,12 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = window.location.pathname.split('/')[3];
         fetchDetails(source, id);
     }
+
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    }
 });
 
 async function fetchSearchResults(query) {
     const wikipediaResults = document.querySelector('#wikipedia-results ul');
     const internetArchiveResults = document.querySelector('#internet-archive-results ul');
     const metMuseumResults = document.querySelector('#met-museum-results ul');
+    const noResultsMessage = document.getElementById('no-results');
 
     const loadingIndicators = document.querySelectorAll('.loading');
     loadingIndicators.forEach(indicator => {
@@ -34,15 +43,21 @@ async function fetchSearchResults(query) {
         }
         const data = await response.json();
 
-        updateResultSection(wikipediaResults, data.wikipedia, 'wikipedia');
-        updateResultSection(internetArchiveResults, data.internet_archive, 'internet_archive');
-        updateResultSection(metMuseumResults, data.met_museum, 'met_museum');
+        const hasWikipediaResults = updateResultSection(wikipediaResults, data.wikipedia, 'wikipedia');
+        const hasInternetArchiveResults = updateResultSection(internetArchiveResults, data.internet_archive, 'internet_archive');
+        const hasMetMuseumResults = updateResultSection(metMuseumResults, data.met_museum, 'met_museum');
+
+        if (!hasWikipediaResults && !hasInternetArchiveResults && !hasMetMuseumResults) {
+            noResultsMessage.classList.remove('hidden');
+        } else {
+            noResultsMessage.classList.add('hidden');
+        }
     } catch (error) {
         console.error('Error fetching search results:', error);
         const errorMessage = document.createElement('p');
         errorMessage.textContent = 'An error occurred while fetching search results. Please try again later.';
         errorMessage.classList.add('text-red-600', 'font-semibold', 'mt-4');
-        searchResults.prepend(errorMessage);
+        document.getElementById('search-results').prepend(errorMessage);
     } finally {
         loadingIndicators.forEach(indicator => indicator.classList.add('hidden'));
     }
@@ -52,40 +67,75 @@ function updateResultSection(container, results, source) {
     container.innerHTML = '';
     if (results.length === 0) {
         container.innerHTML = '<p class="text-gray-600">No results found</p>';
-        return;
+        return false;
     }
     results.forEach(result => {
         const li = document.createElement('li');
         li.innerHTML = createResultHTML(result, source);
         container.appendChild(li);
     });
+    return true;
 }
 
 function createResultHTML(result, source) {
+    const truncateText = (text, maxLength) => {
+        if (text.length <= maxLength) return text;
+        return text.substr(0, maxLength) + '...';
+    };
+
+    const createCard = (title, snippet, fullContent, imageUrl = null) => `
+        <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+            <h3 class="text-lg font-semibold text-blue-600 hover:underline mb-2">${title}</h3>
+            ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="w-full h-48 object-cover mb-2 rounded">` : ''}
+            <p class="text-sm text-gray-600 mb-2">${snippet}</p>
+            <button onclick="showModal('${source}', ${JSON.stringify(fullContent)})" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200">Read More</button>
+        </div>
+    `;
+
     switch (source) {
         case 'wikipedia':
-            return `
-                <a href="/details/wikipedia/${encodeURIComponent(result.pageid)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
-                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
-                    <p class="text-sm text-gray-600 mt-2">${result.snippet}</p>
-                </a>
-            `;
+            return createCard(result.title, truncateText(result.snippet, 100), result);
         case 'internet_archive':
-            return `
-                <a href="/details/internet_archive/${encodeURIComponent(result.identifier)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
-                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
-                    <p class="text-sm text-gray-600 mt-2">${result.description ? result.description.slice(0, 100) + '...' : 'No description available'}</p>
-                </a>
-            `;
+            return createCard(result.title, truncateText(result.description || 'No description available', 100), result);
         case 'met_museum':
-            return `
-                <a href="/details/met_museum/${encodeURIComponent(result.objectID)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
-                    <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
-                    <p class="text-sm text-gray-600 mt-2">${result.artistDisplayName ? 'By ' + result.artistDisplayName : 'Artist unknown'}</p>
-                    ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mt-2 max-w-full h-auto rounded lazy-load">` : ''}
-                </a>
-            `;
+            return createCard(result.title, result.artistDisplayName ? `By ${result.artistDisplayName}` : 'Artist unknown', result, result.primaryImageSmall);
     }
+}
+
+function showModal(source, content) {
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modal-content');
+
+    let htmlContent = '';
+    switch (source) {
+        case 'wikipedia':
+            htmlContent = `
+                <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
+                <p>${content.snippet}</p>
+                <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(content.title)}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
+            `;
+            break;
+        case 'internet_archive':
+            htmlContent = `
+                <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
+                <p>${content.description || 'No description available'}</p>
+                <a href="https://archive.org/details/${content.identifier}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
+            `;
+            break;
+        case 'met_museum':
+            htmlContent = `
+                <h2 class="text-2xl font-bold mb-4">${content.title}</h2>
+                <img src="${content.primaryImage}" alt="${content.title}" class="w-full max-h-96 object-contain mb-4">
+                <p><strong>Artist:</strong> ${content.artistDisplayName || 'Unknown'}</p>
+                <p><strong>Date:</strong> ${content.objectDate || 'N/A'}</p>
+                <p><strong>Medium:</strong> ${content.medium || 'N/A'}</p>
+                <a href="${content.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
+            `;
+            break;
+    }
+
+    modalContent.innerHTML = htmlContent;
+    modal.classList.remove('hidden');
 }
 
 async function fetchDetails(source, id) {
