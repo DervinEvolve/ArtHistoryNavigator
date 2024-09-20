@@ -3,11 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailsContainer = document.getElementById('details-container');
     const modal = document.getElementById('modal');
     const closeModal = document.getElementById('close-modal');
+    const paginationContainer = document.getElementById('pagination');
+    const searchHistoryList = document.getElementById('search-history');
 
     if (searchResults) {
         const query = new URLSearchParams(window.location.search).get('q');
         if (query) {
             fetchSearchResults(query);
+            addToSearchHistory(query);
         }
     }
 
@@ -40,12 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function fetchSearchResults(query) {
+async function fetchSearchResults(query, page = 1) {
     const wikipediaResults = document.querySelector('#wikipedia-results ul');
     const internetArchiveResults = document.querySelector('#internet-archive-results ul');
     const metMuseumResults = document.querySelector('#met-museum-results ul');
     const noResultsMessage = document.getElementById('no-results');
     const searchResults = document.getElementById('search-results');
+    const paginationContainer = document.getElementById('pagination');
 
     const loadingIndicators = document.querySelectorAll('.loading');
     loadingIndicators.forEach(indicator => {
@@ -54,22 +58,24 @@ async function fetchSearchResults(query) {
     });
 
     try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         const data = await response.json();
 
-        const hasWikipediaResults = updateResultSection(wikipediaResults, data.wikipedia, 'wikipedia');
-        const hasInternetArchiveResults = updateResultSection(internetArchiveResults, data.internet_archive, 'internet_archive');
-        const hasMetMuseumResults = updateResultSection(metMuseumResults, data.met_museum, 'met_museum');
+        const hasWikipediaResults = updateResultSection(wikipediaResults, data.results.wikipedia, 'wikipedia');
+        const hasInternetArchiveResults = updateResultSection(internetArchiveResults, data.results.internet_archive, 'internet_archive');
+        const hasMetMuseumResults = updateResultSection(metMuseumResults, data.results.met_museum, 'met_museum');
 
         if (!hasWikipediaResults && !hasInternetArchiveResults && !hasMetMuseumResults) {
             noResultsMessage.classList.remove('hidden');
             searchResults.classList.add('hidden');
+            paginationContainer.classList.add('hidden');
         } else {
             noResultsMessage.classList.add('hidden');
             searchResults.classList.remove('hidden');
+            updatePagination(data.current_page, data.total_pages, query);
         }
     } catch (error) {
         console.error('Error fetching search results:', error);
@@ -100,11 +106,11 @@ function createResultHTML(result, source) {
     };
 
     return `
-        <div class="search-result-card bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col h-full">
-            <h3 class="text-lg font-semibold text-blue-600 hover:underline mb-2">${result.title}</h3>
-            ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mb-2 rounded">` : ''}
-            <p class="text-sm text-gray-600 mb-2 flex-grow">${truncateText(result.snippet || result.description || '', 100)}</p>
-            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200" data-source="${source}" data-content='${JSON.stringify(result)}'>Read More</button>
+        <div class="search-result-card slide-in">
+            ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="lazy-load" data-src="${result.primaryImageSmall}">` : ''}
+            <h3>${result.title}</h3>
+            <p>${truncateText(result.snippet || result.description || '', 100)}</p>
+            <button class="read-more-btn" data-source="${source}" data-content='${JSON.stringify(result)}'>Read More</button>
         </div>
     `;
 }
@@ -145,88 +151,48 @@ function showModal(source, content) {
     modal.classList.remove('hidden');
 }
 
-async function fetchDetails(source, id) {
-    const detailsTitle = document.getElementById('details-title');
-    const detailsContent = document.getElementById('details-content');
+function updatePagination(currentPage, totalPages, query) {
+    const paginationContainer = document.getElementById('pagination');
+    paginationContainer.innerHTML = '';
+    paginationContainer.classList.remove('hidden');
 
-    detailsContent.innerHTML = '<div class="loading"><p class="text-center">Loading...</p></div>';
+    const createPageButton = (page, text) => {
+        const button = document.createElement('button');
+        button.textContent = text;
+        button.classList.add('px-3', 'py-1', 'mx-1', 'rounded');
+        button.disabled = page === currentPage;
+        button.addEventListener('click', () => fetchSearchResults(query, page));
+        return button;
+    };
 
-    try {
-        let data;
-        switch (source) {
-            case 'wikipedia':
-                data = await fetchWikipediaDetails(id);
-                break;
-            case 'internet_archive':
-                data = await fetchInternetArchiveDetails(id);
-                break;
-            case 'met_museum':
-                data = await fetchMetMuseumDetails(id);
-                break;
-            default:
-                throw new Error('Invalid source');
+    if (currentPage > 1) {
+        paginationContainer.appendChild(createPageButton(currentPage - 1, 'Previous'));
+    }
+
+    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+        paginationContainer.appendChild(createPageButton(i, i.toString()));
+    }
+
+    if (currentPage < totalPages) {
+        paginationContainer.appendChild(createPageButton(currentPage + 1, 'Next'));
+    }
+}
+
+function addToSearchHistory(query) {
+    const searchHistoryList = document.getElementById('search-history');
+    if (searchHistoryList) {
+        const listItem = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = `/search?q=${encodeURIComponent(query)}`;
+        link.textContent = query;
+        listItem.appendChild(link);
+        searchHistoryList.prepend(listItem);
+
+        // Limit history to 5 items
+        while (searchHistoryList.children.length > 5) {
+            searchHistoryList.removeChild(searchHistoryList.lastChild);
         }
-
-        detailsTitle.textContent = data.title;
-        detailsContent.innerHTML = data.content;
-        lazyLoadImages();
-    } catch (error) {
-        console.error('Error fetching details:', error);
-        detailsContent.innerHTML = '<p class="text-red-600 font-semibold">Error loading details. Please try again later.</p>';
     }
-}
-
-async function fetchWikipediaDetails(id) {
-    const response = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&pageid=${id}&format=json&origin=*`);
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    const data = await response.json();
-    return {
-        title: data.parse.title,
-        content: data.parse.text['*']
-    };
-}
-
-async function fetchInternetArchiveDetails(id) {
-    const response = await fetch(`https://archive.org/metadata/${id}`);
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    const data = await response.json();
-    return {
-        title: data.metadata.title,
-        content: `
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <p class="mb-4"><strong>Description:</strong> ${data.metadata.description || 'N/A'}</p>
-                <p class="mb-4"><strong>Creator:</strong> ${data.metadata.creator || 'N/A'}</p>
-                <p class="mb-4"><strong>Date:</strong> ${data.metadata.date || 'N/A'}</p>
-                <p><a href="https://archive.org/details/${id}" target="_blank" class="text-blue-600 hover:underline">View on Internet Archive</a></p>
-            </div>
-        `
-    };
-}
-
-async function fetchMetMuseumDetails(id) {
-    const response = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`);
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    const data = await response.json();
-    return {
-        title: data.title,
-        content: `
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <img src="${data.primaryImage}" alt="${data.title}" class="max-w-full h-auto mb-4 rounded lazy-load">
-                <p class="mb-2"><strong>Artist:</strong> ${data.artistDisplayName || 'N/A'}</p>
-                <p class="mb-2"><strong>Date:</strong> ${data.objectDate || 'N/A'}</p>
-                <p class="mb-2"><strong>Medium:</strong> ${data.medium || 'N/A'}</p>
-                <p class="mb-2"><strong>Dimensions:</strong> ${data.dimensions || 'N/A'}</p>
-                <p class="mb-4"><strong>Department:</strong> ${data.department || 'N/A'}</p>
-                <p><a href="${data.objectURL}" target="_blank" class="text-blue-600 hover:underline">View on Met Museum Website</a></p>
-            </div>
-        `
-    };
 }
 
 function lazyLoadImages() {
@@ -246,3 +212,7 @@ function lazyLoadImages() {
         imageObserver.observe(image);
     });
 }
+
+// Call lazyLoadImages when the page loads and after fetching search results
+document.addEventListener('DOMContentLoaded', lazyLoadImages);
+window.addEventListener('load', lazyLoadImages);

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from utils.api_helpers import perform_search
 import asyncio
 import logging
+import math
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -18,9 +19,27 @@ def search():
 @app.route("/api/search")
 async def api_search():
     query = request.args.get("q", "")
+    page = int(request.args.get("page", 1))
+    results_per_page = 20
     try:
-        results = await perform_search(query)
-        return jsonify(results)
+        all_results = await perform_search(query)
+        total_results = sum(len(results) for results in all_results.values())
+        total_pages = math.ceil(total_results / results_per_page)
+
+        start_index = (page - 1) * results_per_page
+        end_index = start_index + results_per_page
+
+        paginated_results = {
+            "wikipedia": all_results["wikipedia"][start_index:end_index],
+            "internet_archive": all_results["internet_archive"][start_index:end_index],
+            "met_museum": all_results["met_museum"][start_index:end_index]
+        }
+
+        return jsonify({
+            "results": paginated_results,
+            "current_page": page,
+            "total_pages": total_pages
+        })
     except Exception as e:
         logging.error(f"Error in api_search: {str(e)}")
         return jsonify({"error": "An error occurred while fetching search results. Please try again later."}), 500
