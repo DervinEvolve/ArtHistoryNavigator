@@ -5,10 +5,11 @@ from flask import jsonify
 
 async def fetch_data(session, url, params=None):
     try:
-        async with session.get(url, params=params, timeout=ClientTimeout(total=5)) as response:
+        async with session.get(url, params=params, timeout=ClientTimeout(total=10)) as response:
             if response.status == 200:
                 return await response.json()
             else:
+                print(f"Error fetching data from {url}: Status {response.status}")
                 return None
     except asyncio.TimeoutError:
         print(f"Timeout error for URL: {url}")
@@ -47,7 +48,7 @@ async def search_met_museum(query):
         if not search_data or "objectIDs" not in search_data:
             return []
 
-        object_ids = search_data["objectIDs"][:10]  # Limit to 10 results
+        object_ids = search_data["objectIDs"][:5]  # Limit to 5 results for faster loading
         object_tasks = [fetch_data(session, f"https://collectionapi.metmuseum.org/public/collection/v1/objects/{object_id}") for object_id in object_ids]
         objects = await asyncio.gather(*object_tasks)
         return [obj for obj in objects if obj]
@@ -58,10 +59,10 @@ async def perform_search(query):
         search_internet_archive(query),
         search_met_museum(query)
     ]
-    wikipedia_results, internet_archive_results, met_museum_results = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     
     return {
-        "wikipedia": wikipedia_results,
-        "internet_archive": internet_archive_results,
-        "met_museum": met_museum_results
+        "wikipedia": results[0] if not isinstance(results[0], Exception) else [],
+        "internet_archive": results[1] if not isinstance(results[1], Exception) else [],
+        "met_museum": results[2] if not isinstance(results[2], Exception) else []
     }

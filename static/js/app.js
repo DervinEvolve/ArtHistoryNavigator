@@ -82,7 +82,7 @@ function createResultHTML(result, source) {
                 <a href="/details/met_museum/${encodeURIComponent(result.objectID)}" class="block p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
                     <h3 class="text-lg font-semibold text-blue-600 hover:underline">${result.title}</h3>
                     <p class="text-sm text-gray-600 mt-2">${result.artistDisplayName ? 'By ' + result.artistDisplayName : 'Artist unknown'}</p>
-                    ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mt-2 max-w-full h-auto rounded">` : ''}
+                    ${result.primaryImageSmall ? `<img src="${result.primaryImageSmall}" alt="${result.title}" class="mt-2 max-w-full h-auto rounded lazy-load">` : ''}
                 </a>
             `;
     }
@@ -112,6 +112,7 @@ async function fetchDetails(source, id) {
 
         detailsTitle.textContent = data.title;
         detailsContent.innerHTML = data.content;
+        lazyLoadImages();
     } catch (error) {
         console.error('Error fetching details:', error);
         detailsContent.innerHTML = '<p class="text-red-600 font-semibold">Error loading details. Please try again later.</p>';
@@ -159,7 +160,7 @@ async function fetchMetMuseumDetails(id) {
         title: data.title,
         content: `
             <div class="bg-white p-6 rounded-lg shadow-md">
-                <img src="${data.primaryImage}" alt="${data.title}" class="max-w-full h-auto mb-4 rounded">
+                <img src="${data.primaryImage}" alt="${data.title}" class="max-w-full h-auto mb-4 rounded lazy-load">
                 <p class="mb-2"><strong>Artist:</strong> ${data.artistDisplayName || 'N/A'}</p>
                 <p class="mb-2"><strong>Date:</strong> ${data.objectDate || 'N/A'}</p>
                 <p class="mb-2"><strong>Medium:</strong> ${data.medium || 'N/A'}</p>
@@ -169,4 +170,22 @@ async function fetchMetMuseumDetails(id) {
             </div>
         `
     };
+}
+
+function lazyLoadImages() {
+    const images = document.querySelectorAll('img.lazy-load');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const image = entry.target;
+                image.src = image.getAttribute('data-src');
+                image.classList.remove('lazy-load');
+                observer.unobserve(image);
+            }
+        });
+    });
+
+    images.forEach(image => {
+        imageObserver.observe(image);
+    });
 }
