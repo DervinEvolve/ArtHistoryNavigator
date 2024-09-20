@@ -67,14 +67,12 @@ async function fetchSearchResults(query, page = 1) {
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
 
-        updateResultSections(data.results);
-        hasMoreResults = page < data.total_pages;
-        currentPage = page;
-
-        if (page === 1) {
-            initializeMasonry();
+        if (data.results && Object.keys(data.results).some(key => data.results[key].length > 0)) {
+            updateResultSections(data.results);
+            hasMoreResults = page < data.total_pages;
+            currentPage = page;
         } else {
-            updateMasonry();
+            showNoResultsMessage();
         }
     } catch (error) {
         console.error('Error fetching search results:', error);
@@ -130,7 +128,7 @@ function createResultHTML(result, source) {
     return `
         <div class="search-result-card fade-in">
             ${cardContent}
-            <button class="read-more-btn" data-source="${source}" data-content='${modalContent}'>Read More</button>
+            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200" data-source="${source}" data-content='${modalContent}'>Read More</button>
         </div>
     `;
 }
@@ -181,22 +179,17 @@ function hideLoadingIndicator() {
     loadingIndicator.classList.add('hidden');
 }
 
+function showNoResultsMessage() {
+    const searchResults = document.getElementById('search-results');
+    searchResults.innerHTML = '<p class="text-center text-gray-600">No results found. Please try a different search term.</p>';
+}
+
 function showErrorMessage() {
     const searchResults = document.getElementById('search-results');
     const errorMessage = document.createElement('p');
     errorMessage.textContent = 'An error occurred while fetching search results. Please try again later.';
     errorMessage.classList.add('text-red-600', 'font-semibold', 'mt-4');
     searchResults.appendChild(errorMessage);
-}
-
-function initializeMasonry() {
-    const searchResults = document.getElementById('search-results');
-    searchResults.innerHTML = '';
-    // You can initialize a masonry layout library here if needed
-}
-
-function updateMasonry() {
-    // Update the masonry layout if you're using a library
 }
 
 function addToSearchHistory(query) {

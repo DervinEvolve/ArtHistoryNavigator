@@ -80,6 +80,8 @@ a, button {
 
 /* Improve search result cards */
 .search-result-card {
+    display: flex;
+    flex-direction: column;
     break-inside: avoid;
     page-break-inside: avoid;
     margin-bottom: 1rem;
@@ -124,6 +126,7 @@ a, button {
     text-align: center;
     font-weight: 500;
     transition: background-color 0.2s ease-in-out;
+    margin-top: auto;
 }
 
 .read-more-btn:hover {
@@ -263,4 +266,12 @@ body {
 
 .search-history a:hover {
     text-decoration: underline;
+}
+
+/* Loading indicator */
+#loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
