@@ -1,3 +1,8 @@
+let isLoading = false;
+let hasMoreResults = true;
+let currentQuery = '';
+let currentPage = 1;
+
 document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('search-results');
     const modal = document.getElementById('modal');
@@ -5,17 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingIndicator = document.getElementById('loading-indicator');
     const backToTopButton = document.getElementById('back-to-top');
 
-    let currentQuery = '';
-    let currentPage = 1;
-    let isLoading = false;
-    let hasMoreResults = true;
-
     if (searchResults) {
         const query = new URLSearchParams(window.location.search).get('q');
         if (query) {
+            console.log('Initial search query:', query);
             currentQuery = query;
             fetchSearchResults(query);
             addToSearchHistory(query);
+        } else {
+            console.log('No search query found');
         }
     }
 
@@ -58,21 +61,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function fetchSearchResults(query, page = 1) {
-    if (isLoading || !hasMoreResults) return;
+    console.log('fetchSearchResults called with query:', query, 'page:', page);
+    if (isLoading || !hasMoreResults) {
+        console.log('Skipping fetch: isLoading =', isLoading, 'hasMoreResults =', hasMoreResults);
+        return;
+    }
     isLoading = true;
     showLoadingIndicator();
 
-    console.log('Fetching results for query:', query, 'page:', page);
-
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
+        console.log('API response status:', response.status);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-
-        console.log('API response:', data);
+        console.log('API response data:', data);
 
         if (data.results && Object.keys(data.results).some(key => data.results[key].length > 0)) {
-            console.log('Results found:', data.results);
+            console.log('Results found, updating sections');
             updateResultSections(data.results);
             hasMoreResults = page < data.total_pages;
             currentPage = page;
@@ -82,7 +87,7 @@ async function fetchSearchResults(query, page = 1) {
         }
     } catch (error) {
         console.error('Error fetching search results:', error);
-        showErrorMessage();
+        showErrorMessage(error.message);
     } finally {
         isLoading = false;
         hideLoadingIndicator();
@@ -192,10 +197,10 @@ function showNoResultsMessage() {
     searchResults.innerHTML = '<p class="text-center text-gray-600">No results found. Please try a different search term.</p>';
 }
 
-function showErrorMessage() {
+function showErrorMessage(message) {
     const searchResults = document.getElementById('search-results');
     const errorMessage = document.createElement('p');
-    errorMessage.textContent = 'An error occurred while fetching search results. Please try again later.';
+    errorMessage.textContent = `An error occurred: ${message}. Please try again later.`;
     errorMessage.classList.add('text-red-600', 'font-semibold', 'mt-4');
     searchResults.appendChild(errorMessage);
 }
