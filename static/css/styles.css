@@ -275,3 +275,51 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+/* Icon styles */
+.icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.wikipedia-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.982 0 4.898v-.455l.052-.045c.924-.005 5.401 0 5.401 0l.051.045v.434c0 .084-.103.14-.216.163-1.079.24-1.38.404-1.38.556 0 .208.547 1.353 1.207 2.807l1.853 4.035c.432-.955 1.774-3.794 2.259-4.842.532-1.17.753-1.781.753-2.008 0-.195-.323-.406-.855-.52-.742-.195-.839-.256-.839-.35v-.461l.051-.045h4.198l.051.045v.439c0 .105-.159.15-.498.195-1.033.15-1.495.421-1.495.914 0 .319.31.922.915 1.785l2.632 3.675 2.045-4.203c.501-1.008.684-1.556.684-1.782 0-.329-.372-.554-.947-.674-.575-.12-.674-.181-.674-.3v-.449l.079-.045h3.923l.052.045v.437c0 .106-.159.166-.498.212-.904.15-1.573.421-1.965.914-1.052 1.306-2.47 4.506-3.395 6.779l-3.131-4.369c-.966-1.34-1.433-2.031-1.433-2.136 0-.094.117-.18.352-.255.352-.12.466-.18.466-.271v-.456l.078-.045h3.773l.078.045v.437c0 .151-.206.212-.618.301-.462.105-.593.24-.593.366 0 .33.635 1.682 1.641 3.453.611-1.263 1.809-3.732 1.92-3.958.342-.691.524-1.125.524-1.303 0-.247-.262-.42-.786-.495-.462-.061-.572-.122-.572-.273v-.46l.078-.046h2.687z"/></svg>');
+}
+
+.internet-archive-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm0-18c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 14c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/></svg>');
+}
+
+.met-museum-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7v-2z"/></svg>');
+}
+
+/* Filter button styles */
+.filter-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.filter-btn:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.filter-btn.active {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.filter-btn .icon {
+    margin-right: 0.5rem;
+}
