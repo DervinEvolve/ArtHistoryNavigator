@@ -23,34 +23,6 @@ args = "Database Migration"
 task = "workflow.run"
 args = "Apply Migration"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Set FLASK_APP"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Check FLASK_APP"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Create Migration"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Initialize Migrations"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Show Database Schema"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Run Flask App"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "View Flask Logs"
-
 [[workflows.workflow]]
 name = "Start Flask App"
 author = "agent"
@@ -72,7 +44,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "flask db migrate -m 'Add recommendation system'"
+args = "flask db migrate -m 'Add LearningPath and Resource models'"
 
 [[workflows.workflow]]
 name = "Apply Migration"
@@ -84,84 +56,6 @@ agentRequireRestartOnSave = false
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "flask db upgrade"
-
-[[workflows.workflow]]
-name = "Set FLASK_APP"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export FLASK_APP=main.py"
-
-[[workflows.workflow]]
-name = "Check FLASK_APP"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo $FLASK_APP"
-
-[[workflows.workflow]]
-name = "Create Migration"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "flask db migrate -m 'Add tags to LearningPath and Resource models'"
-
-[[workflows.workflow]]
-name = "Initialize Migrations"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "flask db init"
-
-[[workflows.workflow]]
-name = "Show Database Schema"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "flask db show"
-
-[[workflows.workflow]]
-name = "Run Flask App"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "View Flask Logs"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "tail -f /home/runner/flask.log"
 
 [deployment]
 run = ["sh", "-c", "python main.py"]

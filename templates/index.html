@@ -2,27 +2,24 @@
 
 {% block content %}
 <div class="text-center">
-    <h1 class="text-4xl font-bold mb-8">Welcome to Art History Explorer</h1>
-    <p class="text-xl mb-8">Discover and explore the rich world of art history</p>
-    <form action="{{ url_for('search') }}" method="get" class="mb-8">
-        <input type="text" name="q" placeholder="Search for artworks, artists, or periods" class="w-full max-w-lg px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
+    <h1 class="text-4xl font-bold mb-8">Welcome to History & Art History Explorer</h1>
+    <p class="text-xl mb-8">Discover the rich tapestry of human history and artistic achievements.</p>
+    <form action="/search" method="get" class="mb-8">
+        <input type="text" name="q" placeholder="Search for historical events, artworks, or artifacts" class="w-full max-w-lg px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
         <button type="submit" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200">Search</button>
     </form>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-semibold mb-4">Explore Artworks</h2>
-            <p class="mb-4">Discover masterpieces from various museums and collections around the world.</p>
-            <a href="{{ url_for('search') }}?q=famous+paintings" class="text-blue-600 hover:underline">Start exploring</a>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold mb-4">Wikipedia</h2>
+            <p>Access a vast repository of human knowledge.</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-semibold mb-4">Learn About Artists</h2>
-            <p class="mb-4">Dive into the lives and works of renowned artists throughout history.</p>
-            <a href="{{ url_for('search') }}?q=famous+artists" class="text-blue-600 hover:underline">Discover artists</a>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold mb-4">Internet Archive</h2>
+            <p>Explore digital artifacts from throughout history.</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-semibold mb-4">Explore Art Movements</h2>
-            <p class="mb-4">Understand the various art movements that shaped the course of art history.</p>
-            <a href="{{ url_for('search') }}?q=art+movements" class="text-blue-600 hover:underline">Explore movements</a>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold mb-4">Metropolitan Museum of Art</h2>
+            <p>Discover masterpieces from around the world.</p>
         </div>
     </div>
 </div>

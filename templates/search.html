@@ -2,96 +2,70 @@
 
 {% block content %}
 <div class="container mx-auto px-4">
-    <h1 class="text-3xl font-bold mb-8">Search</h1>
-    <form id="search-form" class="mb-8">
-        <input type="text" id="search-input" name="q" placeholder="Enter your search query" value="{{ query }}" class="w-full max-w-lg px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
+    <h1 class="text-3xl font-bold mb-8">Search Results for "{{ query }}"</h1>
+    <form action="/search" method="get" class="mb-8">
+        <input type="text" name="q" value="{{ query }}" class="w-full max-w-lg px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
         <button type="submit" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200">Search</button>
-        <div class="mt-4">
-            <label for="api-toggle" class="mr-2">Select API:</label>
-            <select id="api-toggle" name="api" class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
-                <option value="openai">OpenAI</option>
-                <option value="perplexity">Perplexity</option>
-            </select>
-        </div>
     </form>
-    <div id="recommendations" class="mb-8">
-        <h2 class="text-xl font-semibold mb-4">Recommended Searches:</h2>
-        <div id="recommendation-list" class="flex flex-wrap gap-2"></div>
+    <div class="mb-4">
+        <h3 class="text-xl font-semibold mb-2">Filter Results:</h3>
+        <div class="flex flex-wrap">
+            <button class="filter-btn active" data-source="wikipedia">
+                <span class="icon wikipedia-icon"></span>Wikipedia
+            </button>
+            <button class="filter-btn active" data-source="internet_archive">
+                <span class="icon internet-archive-icon"></span>Internet Archive
+            </button>
+            <button class="filter-btn active" data-source="met_museum">
+                <span class="icon met-museum-icon"></span>Met Museum
+            </button>
+            <button class="filter-btn active" data-source="rijksmuseum">
+                <span class="icon rijksmuseum-icon"></span>Rijksmuseum
+            </button>
+            <button class="filter-btn active" data-source="harvard_art_museums">
+                <span class="icon harvard-art-museums-icon"></span>Harvard Art Museums
+            </button>
+            <button class="filter-btn active" data-source="cooper_hewitt">
+                <span class="icon cooper-hewitt-icon"></span>Cooper Hewitt
+            </button>
+        </div>
     </div>
-    <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Results will be populated here -->
+    <div class="flex flex-col md:flex-row">
+        <aside class="w-full md:w-1/4 pr-4 mb-8 md:mb-0">
+            <div class="sidebar">
+                <h3>Search History</h3>
+                <ul id="search-history" class="search-history">
+                    <!-- Search history will be populated here -->
+                </ul>
+            </div>
+        </aside>
+        <main class="w-full md:w-3/4">
+            <div id="no-results" class="hidden text-center text-gray-600 text-xl mb-8">
+                No results found for your query. Please try a different search term.
+            </div>
+            <div id="search-results" class="search-results-container">
+                <!-- Results will be populated here -->
+            </div>
+            <div id="loading-indicator" class="hidden text-center py-4">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <p class="mt-2">Loading more results...</p>
+            </div>
+        </main>
     </div>
-    <div id="pagination-container" class="mt-8 flex justify-center"></div>
 </div>
 
-<script>
-    document.getElementById('search-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const query = document.getElementById('search-input').value;
-        const api = document.getElementById('api-toggle').value;
-        searchAndDisplayResults(query, 1, api);
-    });
+<button id="back-to-top" class="fixed bottom-4 right-4 bg-blue-600 text-white p-2 rounded-full shadow-md hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+    </svg>
+</button>
 
-    function searchAndDisplayResults(query, page, api) {
-        fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}&api=${api}`)
-            .then(response => response.json())
-            .then(data => {
-                displayResults(data.results);
-                displayPagination(data.current_page, data.total_pages, query, api);
-                displayRecommendations(data.recommendations, query);
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    function displayResults(results) {
-        const resultsContainer = document.getElementById('results-container');
-        resultsContainer.innerHTML = '';
-        for (const [source, sourceResults] of Object.entries(results)) {
-            sourceResults.forEach(result => {
-                const resultElement = document.createElement('div');
-                resultElement.className = 'bg-white p-4 rounded-lg shadow';
-                resultElement.innerHTML = `
-                    <h2 class="text-xl font-semibold mb-2">${result.title}</h2>
-                    <p class="text-gray-600 mb-2">${result.description || result.snippet || ''}</p>
-                    <p class="text-sm text-gray-500">Source: ${source}</p>
-                    ${result.url ? `<a href="${result.url}" target="_blank" class="text-blue-600 hover:underline">Read more</a>` : ''}
-                `;
-                resultsContainer.appendChild(resultElement);
-            });
-        }
-    }
-
-    function displayPagination(currentPage, totalPages, query, api) {
-        const paginationContainer = document.getElementById('pagination-container');
-        paginationContainer.innerHTML = '';
-        for (let i = 1; i <= totalPages; i++) {
-            const pageButton = document.createElement('button');
-            pageButton.innerText = i;
-            pageButton.className = i === currentPage ? 'mx-1 px-3 py-1 bg-blue-600 text-white rounded' : 'mx-1 px-3 py-1 bg-gray-200 rounded';
-            pageButton.addEventListener('click', () => searchAndDisplayResults(query, i, api));
-            paginationContainer.appendChild(pageButton);
-        }
-    }
-
-    function displayRecommendations(recommendations, currentQuery) {
-        const recommendationList = document.getElementById('recommendation-list');
-        recommendationList.innerHTML = '';
-        recommendations.forEach(rec => {
-            const recButton = document.createElement('button');
-            recButton.innerText = rec;
-            recButton.className = 'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300';
-            recButton.addEventListener('click', () => {
-                document.getElementById('search-input').value = rec;
-                searchAndDisplayResults(rec, 1, document.getElementById('api-toggle').value);
-            });
-            recommendationList.appendChild(recButton);
-        });
-    }
-
-    // Initial search if query is present
-    const initialQuery = document.getElementById('search-input').value;
-    if (initialQuery) {
-        searchAndDisplayResults(initialQuery, 1, document.getElementById('api-toggle').value);
-    }
-</script>
+<div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div id="modal-content" class="max-h-[70vh] overflow-y-auto"></div>
+        <div class="text-right mt-4">
+            <button id="close-modal" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700">Close</button>
+        </div>
+    </div>
+</div>
 {% endblock %}

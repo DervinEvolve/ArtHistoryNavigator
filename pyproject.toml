@@ -14,8 +14,6 @@ flask-login = "^0.6.3"
 flask-sqlalchemy = "^3.1.1"
 flask-migrate = "^4.0.7"
 psycopg2-binary = "^2.9.9"
-openai = "^1.47.0"
-python-dotenv = "^1.0.1"
 
 
 [build-system]
