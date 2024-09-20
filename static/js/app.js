@@ -4,7 +4,7 @@ let currentQuery = '';
 let currentPage = 1;
 let totalResults = 0;
 let remainingResults = 0;
-let visibleSources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums'];
+let visibleSources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums', 'cooper_hewitt', 'perplexity'];
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM content loaded');
@@ -148,7 +148,7 @@ function updateResultSections(results, page) {
         searchResults.innerHTML = '';
     }
 
-    const sources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums'];
+    const sources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums', 'cooper_hewitt', 'perplexity'];
     sources.forEach(source => {
         if (results[source] && results[source].length > 0) {
             console.log(`Adding results for ${source}`);
@@ -243,6 +243,19 @@ function createResultHTML(result, source) {
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.people ? result.people[0].name : '', 50)}</p>
             `;
             break;
+        case 'cooper_hewitt':
+            iconClass = 'cooper-hewitt-icon';
+            cardContent = `
+                <img src="${result.images[0].b.url}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.images[0].b.url}">
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.department_name || '', 50)}</p>
+            `;
+            break;
+        case 'perplexity':
+            iconClass = 'perplexity-icon';
+            cardContent = `
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.content || '', 150)}</p>
+            `;
+            break;
     }
 
     console.log('Generated cardContent:', cardContent);
@@ -334,6 +347,22 @@ function showModal(source, content) {
                     <p class="mb-2"><strong>Date:</strong> ${parsedContent.dated || 'N/A'}</p>
                     <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
                     <a href="${parsedContent.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Harvard Art Museums Website</a>
+                `;
+                break;
+            case 'cooper_hewitt':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
+                    <img src="${parsedContent.images[0].b.url}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
+                    <p class="mb-2"><strong>Department:</strong> ${parsedContent.department_name || 'N/A'}</p>
+                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.date || 'N/A'}</p>
+                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
+                    <a href="${parsedContent.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Cooper Hewitt Website</a>
+                `;
+                break;
+            case 'perplexity':
+                htmlContent = `
+                    <h2 class="text-2xl font-bold mb-4">Perplexity AI Response</h2>
+                    <p class="mb-4">${parsedContent.content || 'No content available'}</p>
                 `;
                 break;
             default:

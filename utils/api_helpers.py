@@ -4,9 +4,9 @@ from aiohttp import ClientTimeout
 from flask import jsonify
 import os
 
-async def fetch_data(session, url, params=None):
+async def fetch_data(session, url, params=None, headers=None):
     try:
-        async with session.get(url, params=params, timeout=ClientTimeout(total=10)) as response:
+        async with session.get(url, params=params, headers=headers, timeout=ClientTimeout(total=10)) as response:
             if response.status == 200:
                 return await response.json()
             else:
@@ -77,17 +77,48 @@ async def search_harvard_art_museums(query):
         data = await fetch_data(session, url, params)
         return data["records"] if data and "records" in data else []
 
+async def search_cooper_hewitt(query):
+    url = "https://api.collection.cooperhewitt.org/rest/"
+    params = {
+        "method": "cooperhewitt.search.objects",
+        "access_token": os.environ.get("COOPER_HEWITT_API_KEY"),
+        "query": query,
+        "page": 1,
+        "per_page": 5  # Limit to 5 results
+    }
+    async with aiohttp.ClientSession() as session:
+        data = await fetch_data(session, url, params)
+        return data["objects"] if data and "objects" in data else []
+
+async def search_perplexity(query):
+    url = "https://api.perplexity.ai/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {os.environ.get('PERPLEXITY_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "pplx-7b-online",
+        "messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": query}]
+    }
+    async with aiohttp.ClientSession() as session:
+        response = await fetch_data(session, url, headers=headers, params=data)
+        if response and "choices" in response:
+            return [{"content": choice["message"]["content"]} for choice in response["choices"]]
+        return []
+
 async def perform_search(query):
     tasks = [
         search_wikipedia(query),
         search_internet_archive(query),
         search_met_museum(query),
         search_rijksmuseum(query),
-        search_harvard_art_museums(query)
+        search_harvard_art_museums(query),
+        search_cooper_hewitt(query),
+        search_perplexity(query)
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
-    sources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums']
+    sources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseum', 'harvard_art_museums', 'cooper_hewitt', 'perplexity']
     search_results = {}
     errors = {}
 

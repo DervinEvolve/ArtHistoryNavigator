@@ -322,3 +322,16 @@ body {
 .filter-btn .icon {
     margin-right: 0.5rem;
 }
+
+/* New icon classes for Rijksmuseum, Harvard Art Museums, and Cooper Hewitt */
+.rijksmuseum-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12 2L2 7v9h2v7h16v-7h2V7L12 2zm0 2.73L19.13 9H4.87L12 4.73zM4 16V9h16v7H4z"/></svg>');
+}
+
+.harvard-art-museums-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 14.18L3 13l9 4.91L21 13l-9 4.18z"/></svg>');
+}
+
+.cooper-hewitt-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>');
+}
