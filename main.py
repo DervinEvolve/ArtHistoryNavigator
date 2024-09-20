@@ -162,117 +162,107 @@ def visualize():
     ]
     
     map_data = {
-        'type': 'FeatureCollection',
-        'features': [
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'Paris',
-                    'description': 'Capital of France',
-                    'century': 21
+        "storymap": {
+            "slides": [
+                {
+                    "type": "overview",
+                    "text": {
+                        "headline": "Historical Places",
+                        "text": "An overview of important historical locations"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [2.3522, 48.8566]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'London',
-                    'description': 'Capital of the United Kingdom',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": 48.8566,
+                        "lon": 2.3522
+                    },
+                    "text": {
+                        "headline": "Paris",
+                        "text": "Capital of France"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [-0.1278, 51.5074]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'New York',
-                    'description': 'Largest city in the United States',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": 51.5074,
+                        "lon": -0.1278
+                    },
+                    "text": {
+                        "headline": "London",
+                        "text": "Capital of the United Kingdom"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [-74.0060, 40.7128]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'Tokyo',
-                    'description': 'Capital of Japan',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": 40.7128,
+                        "lon": -74.0060
+                    },
+                    "text": {
+                        "headline": "New York",
+                        "text": "Largest city in the United States"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [139.6503, 35.6762]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'Sydney',
-                    'description': 'Largest city in Australia',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": 35.6762,
+                        "lon": 139.6503
+                    },
+                    "text": {
+                        "headline": "Tokyo",
+                        "text": "Capital of Japan"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [151.2093, -33.8688]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'Moscow',
-                    'description': 'Capital of Russia',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": -33.8688,
+                        "lon": 151.2093
+                    },
+                    "text": {
+                        "headline": "Sydney",
+                        "text": "Largest city in Australia"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [37.6173, 55.7558]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'Rio de Janeiro',
-                    'description': 'Second-largest city in Brazil',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": 55.7558,
+                        "lon": 37.6173
+                    },
+                    "text": {
+                        "headline": "Moscow",
+                        "text": "Capital of Russia"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [-43.1729, -22.9068]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'Cairo',
-                    'description': 'Capital of Egypt',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": -22.9068,
+                        "lon": -43.1729
+                    },
+                    "text": {
+                        "headline": "Rio de Janeiro",
+                        "text": "Second-largest city in Brazil"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [31.2357, 30.0444]
-                }
-            },
-            {
-                'type': 'Feature',
-                'properties': {
-                    'title': 'New Delhi',
-                    'description': 'Capital of India',
-                    'century': 21
+                {
+                    "location": {
+                        "lat": 30.0444,
+                        "lon": 31.2357
+                    },
+                    "text": {
+                        "headline": "Cairo",
+                        "text": "Capital of Egypt"
+                    }
                 },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [77.2090, 28.6139]
+                {
+                    "location": {
+                        "lat": 28.6139,
+                        "lon": 77.2090
+                    },
+                    "text": {
+                        "headline": "New Delhi",
+                        "text": "Capital of India"
+                    }
                 }
-            }
-        ]
+            ]
+        }
     }
     
     return render_template('visualize.html', title='Visualize', timeline_data=timeline_data, map_data=map_data)

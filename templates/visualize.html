@@ -120,7 +120,7 @@
             mapLoading.style.display = 'none';
         }
 
-        // Century filter functionality
+        // Century filter functionality (only for timeline)
         document.getElementById('century-filter').addEventListener('change', function() {
             var century = this.value;
             
@@ -134,21 +134,6 @@
             }
             if (window.timeline) {
                 window.timeline.setConfig({events: filteredEvents});
-            }
-
-            // Filter StoryMap
-            if (window.storymap) {
-                var filteredFeatures = storymap_data.features;
-                if (century !== 'all') {
-                    filteredFeatures = storymap_data.features.filter(function(feature) {
-                        return feature.properties.century == century;
-                    });
-                }
-                window.storymap.data = {
-                    type: 'FeatureCollection',
-                    features: filteredFeatures
-                };
-                window.storymap.updateDisplay();
             }
         });
     });
