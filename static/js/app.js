@@ -22,6 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.classList.add('hidden');
         });
     }
+
+    // Close modal when clicking outside the content
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
 });
 
 async function fetchSearchResults(query) {
@@ -29,6 +36,7 @@ async function fetchSearchResults(query) {
     const internetArchiveResults = document.querySelector('#internet-archive-results ul');
     const metMuseumResults = document.querySelector('#met-museum-results ul');
     const noResultsMessage = document.getElementById('no-results');
+    const searchResults = document.getElementById('search-results');
 
     const loadingIndicators = document.querySelectorAll('.loading');
     loadingIndicators.forEach(indicator => {
@@ -49,15 +57,17 @@ async function fetchSearchResults(query) {
 
         if (!hasWikipediaResults && !hasInternetArchiveResults && !hasMetMuseumResults) {
             noResultsMessage.classList.remove('hidden');
+            searchResults.classList.add('hidden');
         } else {
             noResultsMessage.classList.add('hidden');
+            searchResults.classList.remove('hidden');
         }
     } catch (error) {
         console.error('Error fetching search results:', error);
         const errorMessage = document.createElement('p');
         errorMessage.textContent = 'An error occurred while fetching search results. Please try again later.';
         errorMessage.classList.add('text-red-600', 'font-semibold', 'mt-4');
-        document.getElementById('search-results').prepend(errorMessage);
+        searchResults.prepend(errorMessage);
     } finally {
         loadingIndicators.forEach(indicator => indicator.classList.add('hidden'));
     }
@@ -69,11 +79,8 @@ function updateResultSection(container, results, source) {
         container.innerHTML = '<p class="text-gray-600">No results found</p>';
         return false;
     }
-    results.forEach(result => {
-        const li = document.createElement('li');
-        li.innerHTML = createResultHTML(result, source);
-        container.appendChild(li);
-    });
+    const resultsHTML = results.map(result => createResultHTML(result, source)).join('');
+    container.innerHTML = resultsHTML;
     return true;
 }
 
@@ -84,7 +91,7 @@ function createResultHTML(result, source) {
     };
 
     const createCard = (title, snippet, fullContent, imageUrl = null) => `
-        <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+        <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 mb-4">
             <h3 class="text-lg font-semibold text-blue-600 hover:underline mb-2">${title}</h3>
             ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="w-full h-48 object-cover mb-2 rounded">` : ''}
             <p class="text-sm text-gray-600 mb-2">${snippet}</p>
