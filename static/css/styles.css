@@ -78,53 +78,60 @@ a, button {
     opacity: 1;
 }
 
+/* Search results container */
+.search-results-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
 /* Improve search result cards */
 .search-result-card {
     display: flex;
     flex-direction: column;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin-bottom: 1rem;
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-    background-color: #ffffff;
+    height: 100%;
+    padding: 1rem;
     border-radius: 8px;
-    overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    background-color: #ffffff;
 }
 
 .search-result-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .search-result-card img {
     width: 100%;
-    height: 150px;
+    height: 200px;
     object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 1rem;
 }
 
 .search-result-card h3 {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
-    margin: 0.5rem 0;
-    padding: 0 1rem;
+    margin-bottom: 0.5rem;
+    color: #1a202c;
 }
 
 .search-result-card p {
-    font-size: 0.9rem;
-    color: #4b5563;
-    margin-bottom: 0.5rem;
-    padding: 0 1rem;
+    font-size: 1rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
     flex-grow: 1;
 }
 
 .read-more-btn {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.75rem;
     background-color: #3b82f6;
     color: #ffffff;
     text-align: center;
     font-weight: 500;
+    border-radius: 4px;
     transition: background-color 0.2s ease-in-out;
     margin-top: auto;
 }
@@ -160,13 +167,6 @@ button:active {
 body {
     background-color: #f7fafc;
     background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-}
-
-/* Search results container */
-.search-results-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
 }
 
 /* Modal styles */
@@ -281,6 +281,7 @@ body {
     display: inline-block;
     width: 24px;
     height: 24px;
+    margin-right: 0.5rem;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -300,26 +301,19 @@ body {
 
 /* Filter button styles */
 .filter-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     padding: 0.5rem 1rem;
     margin-right: 0.5rem;
     margin-bottom: 0.5rem;
+    background-color: #f3f4f6;
+    color: #374151;
     border-radius: 9999px;
     font-weight: 500;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-.filter-btn:hover {
-    background-color: #2563eb;
+.filter-btn:hover, .filter-btn.active {
+    background-color: #3b82f6;
     color: #ffffff;
-}
-
-.filter-btn.active {
-    background-color: #2563eb;
-    color: #ffffff;
-}
-
-.filter-btn .icon {
-    margin-right: 0.5rem;
 }

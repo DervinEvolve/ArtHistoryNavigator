@@ -168,14 +168,13 @@ function createResultHTML(result, source) {
 
     let cardContent = '';
     let modalContent = '';
-    let icon = '';
+    let iconClass = '';
 
     switch (source) {
         case 'wikipedia':
-            icon = '<span class="icon wikipedia-icon mr-2"></span>';
+            iconClass = 'wikipedia-icon';
             cardContent = `
-                <h3 class="text-lg font-semibold mb-2 flex items-center">${icon}${result.title}</h3>
-                <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || '', 100)}</p>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || '', 150)}</p>
             `;
             modalContent = JSON.stringify({
                 title: result.title,
@@ -184,10 +183,9 @@ function createResultHTML(result, source) {
             });
             break;
         case 'internet_archive':
-            icon = '<span class="icon internet-archive-icon mr-2"></span>';
+            iconClass = 'internet-archive-icon';
             cardContent = `
-                <h3 class="text-lg font-semibold mb-2 flex items-center">${icon}${result.title}</h3>
-                <p class="text-sm text-gray-600 mb-4">${truncateText(result.description || '', 100)}</p>
+                <p class="text-sm text-gray-600 mb-4">${truncateText(result.description || '', 150)}</p>
             `;
             modalContent = JSON.stringify({
                 title: result.title,
@@ -196,10 +194,9 @@ function createResultHTML(result, source) {
             });
             break;
         case 'met_museum':
-            icon = '<span class="icon met-museum-icon mr-2"></span>';
+            iconClass = 'met-museum-icon';
             cardContent = `
                 <img src="${result.primaryImageSmall}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryImageSmall}">
-                <h3 class="text-lg font-semibold mb-2 flex items-center">${icon}${result.title}</h3>
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName, 50)}</p>
             `;
             modalContent = JSON.stringify(result);
@@ -208,8 +205,12 @@ function createResultHTML(result, source) {
 
     return `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
+            <div class="flex items-center mb-2">
+                <span class="icon ${iconClass} mr-2"></span>
+                <h3 class="text-lg font-semibold">${result.title}</h3>
+            </div>
             ${cardContent}
-            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 w-full" data-source="${source}" data-content='${modalContent}'>Read More</button>
+            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>
         </div>
     `;
 }
@@ -332,6 +333,16 @@ function filterResults() {
             header.classList.remove('hidden');
         } else {
             header.classList.add('hidden');
+        }
+    });
+
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+        const source = button.dataset.source;
+        if (visibleSources.includes(source)) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
         }
     });
 }
