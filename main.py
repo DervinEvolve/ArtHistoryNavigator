@@ -1,11 +1,30 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_migrate import Migrate
+from urllib.parse import urlparse
 from utils.api_helpers import perform_search
+from models import db, User, LearningPath
 import asyncio
 import logging
 import math
+import os
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+migrate = Migrate(app, db)
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
 logging.basicConfig(level=logging.INFO)
+
+@login_manager.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
 @app.route("/")
 def index():
@@ -55,6 +74,78 @@ async def api_search():
 @app.route("/details/<source>/<id>")
 def details(source, id):
     return render_template("details.html", source=source, id=id)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user is not None:
+            flash('Please use a different username.')
+            return redirect(url_for('register'))
+        user = User.query.filter_by(email=email).first()
+        if user is not None:
+            flash('Please use a different email address.')
+            return redirect(url_for('register'))
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Congratulations, you are now a registered user!')
+        return redirect(url_for('login'))
+    return render_template('register.html', title='Register')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        user = User.query.filter_by(username=request.form['username']).first()
+        if user is None or not user.check_password(request.form['password']):
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        login_user(user, remember=request.form.get('remember_me'))
+        next_page = request.args.get('next')
+        if not next_page or urlparse(next_page).netloc != '':
+            next_page = url_for('index')
+        return redirect(next_page)
+    return render_template('login.html', title='Sign In')
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', title='Profile')
+
+@app.route('/create_learning_path', methods=['GET', 'POST'])
+@login_required
+def create_learning_path():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        learning_path = LearningPath(title=title, description=description, user=current_user)
+        db.session.add(learning_path)
+        db.session.commit()
+        flash('Your learning path has been created!')
+        return redirect(url_for('profile'))
+    return render_template('create_learning_path.html', title='Create Learning Path')
+
+@app.route('/learning_path/<int:path_id>')
+@login_required
+def view_learning_path(path_id):
+    learning_path = LearningPath.query.get_or_404(path_id)
+    if learning_path.user != current_user:
+        flash('You do not have permission to view this learning path.')
+        return redirect(url_for('profile'))
+    return render_template('view_learning_path.html', title='View Learning Path', learning_path=learning_path)
 
 @app.errorhandler(404)
 def page_not_found(e):

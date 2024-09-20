@@ -10,6 +10,10 @@ python = "^3.11"
 flask = {extras = ["async"], version = "^3.0.3"}
 requests = "^2.32.3"
 aiohttp = "^3.10.5"
+flask-login = "^0.6.3"
+flask-sqlalchemy = "^3.1.1"
+flask-migrate = "^4.0.7"
+psycopg2-binary = "^2.9.9"
 
 
 [build-system]

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Your Profile</h1>
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <p class="mb-4"><strong>Username:</strong> {{ current_user.username }}</p>
+        <p class="mb-4"><strong>Email:</strong> {{ current_user.email }}</p>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4">Your Learning Paths</h2>
+    {% if current_user.learning_paths %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for path in current_user.learning_paths %}
+                <div class="bg-white shadow-md rounded px-8 pt-6 pb-8">
+                    <h3 class="text-xl font-bold mb-2">{{ path.title }}</h3>
+                    <p class="mb-4">{{ path.description }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="mb-4">You haven't created any learning paths yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('create_learning_path') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        Create New Learning Path
+    </a>
+</div>
+{% endblock %}
