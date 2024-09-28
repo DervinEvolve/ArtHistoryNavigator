@@ -12,17 +12,17 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <header class="bg-blue-600 text-white p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold flex items-center">
+        <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <a href="/" class="text-2xl font-bold flex items-center mb-4 sm:mb-0">
                 <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Logo" class="w-8 h-8 mr-2">
                 History & Art Explorer
             </a>
             <nav>
-                <ul class="flex space-x-4">
-                    <li><a href="/" class="hover:underline">Home</a></li>
-                    <li><a href="/search" class="hover:underline">Search</a></li>
-                    <li><a href="/visualize" class="hover:underline">Visualize</a></li>
-                    <li><a href="{{ url_for('view_collections') }}" class="hover:underline">Collections</a></li>
+                <ul class="flex flex-wrap justify-center sm:space-x-4">
+                    <li class="w-full sm:w-auto text-center mb-2 sm:mb-0"><a href="/" class="hover:underline block py-1">Home</a></li>
+                    <li class="w-full sm:w-auto text-center mb-2 sm:mb-0"><a href="/search" class="hover:underline block py-1">Search</a></li>
+                    <li class="w-full sm:w-auto text-center mb-2 sm:mb-0"><a href="/visualize" class="hover:underline block py-1">Visualize</a></li>
+                    <li class="w-full sm:w-auto text-center mb-2 sm:mb-0"><a href="{{ url_for('view_collections') }}" class="hover:underline block py-1">Collections</a></li>
                 </ul>
             </nav>
         </div>
