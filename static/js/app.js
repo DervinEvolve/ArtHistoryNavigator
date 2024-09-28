@@ -277,15 +277,17 @@ function createResultHTML(result, source) {
 
     const cardHtml = `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
-            <div class="flex items-center mb-2">
-                <span class="icon ${iconClass} mr-2"></span>
-                <h3 class="text-lg font-semibold">${result.title || 'No title'}</h3>
-            </div>
-            ${cardContent}
-            <div class="expanded-content hidden">${expandedContent}</div>
-            <div class="flex justify-between mt-4">
-                <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200">Read More</button>
-                <button class="add-to-collection-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-200" data-source="${source}" data-content='${modalContent}'>Add to Collection</button>
+            <div class="p-4 flex flex-col h-full">
+                <div class="flex items-center mb-2">
+                    <span class="icon ${iconClass} mr-2"></span>
+                    <h3 class="text-lg font-semibold">${result.title || 'No title'}</h3>
+                </div>
+                ${cardContent}
+                <div class="expanded-content hidden">${expandedContent}</div>
+                <div class="mt-auto flex justify-between items-center">
+                    <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 flex-grow mr-2">Read More</button>
+                    <button class="add-to-collection-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-200 flex-grow ml-2" data-source="${source}" data-content='${modalContent}'>Add to Collection</button>
+                </div>
             </div>
         </div>
     `;
