@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const floatingCard = document.querySelector('.floating-card');
             if (floatingCard) {
                 floatingCard.remove();
+                document.body.style.overflow = '';
             }
         }
     });
@@ -302,16 +303,24 @@ function showFloatingCard(card) {
 
     const expandedContent = card.querySelector('.expanded-content').innerHTML;
     const floatingCard = document.createElement('div');
-    floatingCard.className = 'floating-card fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl z-50 max-w-2xl w-full max-h-[80vh] overflow-y-auto';
+    floatingCard.className = 'floating-card fixed inset-0 flex items-center justify-center bg-black bg-opacity-50';
     floatingCard.innerHTML = `
-        ${expandedContent}
-        <button class="close-floating-card absolute top-2 right-2 text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto relative">
+            ${expandedContent}
+            <button class="close-floating-card absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
     `;
     document.body.appendChild(floatingCard);
+    document.body.style.overflow = 'hidden';
+
+    floatingCard.querySelector('.close-floating-card').addEventListener('click', function() {
+        floatingCard.remove();
+        document.body.style.overflow = '';
+    });
 }
 
 function showCollectionsModal(source, content) {
@@ -319,7 +328,6 @@ function showCollectionsModal(source, content) {
     const modal = document.getElementById('collections-modal');
     const collectionsList = document.getElementById('collections-list');
 
-    // Fetch user's collections
     fetch('/api/collections')
         .then(response => response.json())
         .then(collections => {
@@ -345,7 +353,6 @@ document.addEventListener('click', function(e) {
         const source = e.target.dataset.source;
         const content = e.target.dataset.content;
 
-        // Add item to collection
         fetch(`/add_to_collection/${collectionId}`, {
             method: 'POST',
             headers: {

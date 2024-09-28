@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_migrate import Migrate
-from urllib.parse import urlparse
 from utils.api_helpers import perform_search
 from models import db, LearningPath, Resource, Collection
 import asyncio
