@@ -22,31 +22,13 @@
                     <li><a href="/" class="hover:underline">Home</a></li>
                     <li><a href="/search" class="hover:underline">Search</a></li>
                     <li><a href="/visualize" class="hover:underline">Visualize</a></li>
-                    {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('profile') }}" class="hover:underline">Profile</a></li>
-                        <li><a href="{{ url_for('view_collections') }}" class="hover:underline">Collections</a></li>
-                        <li><a href="{{ url_for('logout') }}" class="hover:underline">Logout</a></li>
-                    {% else %}
-                        <li><a href="{{ url_for('login') }}" class="hover:underline">Login</a></li>
-                        <li><a href="{{ url_for('register') }}" class="hover:underline">Register</a></li>
-                    {% endif %}
+                    <li><a href="{{ url_for('view_collections') }}" class="hover:underline">Collections</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
     <main class="container mx-auto flex-grow p-4">
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="bg-blue-100 border-t border-b border-blue-500 text-blue-700 px-4 py-3 mb-4" role="alert">
-                <ul class="list-disc list-inside">
-                    {% for message in messages %}
-                    <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
-        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 

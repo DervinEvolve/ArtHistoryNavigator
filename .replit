@@ -44,7 +44,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "flask db migrate -m 'Add Collection model and relationships'"
+args = "flask db migrate -m 'Remove User model and update related tables'"
 
 [[workflows.workflow]]
 name = "Apply Migration"
