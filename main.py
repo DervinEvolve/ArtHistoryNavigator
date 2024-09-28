@@ -3,11 +3,12 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_migrate import Migrate
 from urllib.parse import urlparse
 from utils.api_helpers import perform_search
-from models import db, User, LearningPath
+from models import db, User, LearningPath, Resource, Collection
 import asyncio
 import logging
 import math
 import os
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
@@ -146,6 +147,59 @@ def view_learning_path(path_id):
         flash('You do not have permission to view this learning path.')
         return redirect(url_for('profile'))
     return render_template('view_learning_path.html', title='View Learning Path', learning_path=learning_path)
+
+@app.route('/create_collection', methods=['GET', 'POST'])
+@login_required
+def create_collection():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        collection = Collection(title=title, description=description, user=current_user)
+        db.session.add(collection)
+        db.session.commit()
+        flash('Your collection has been created!')
+        return redirect(url_for('view_collection', collection_id=collection.id))
+    return render_template('create_collection.html', title='Create Collection')
+
+@app.route('/collection/<int:collection_id>')
+@login_required
+def view_collection(collection_id):
+    collection = Collection.query.get_or_404(collection_id)
+    if collection.user != current_user:
+        flash('You do not have permission to view this collection.')
+        return redirect(url_for('profile'))
+    return render_template('view_collection.html', title='View Collection', collection=collection)
+
+@app.route('/add_to_collection/<int:collection_id>', methods=['POST'])
+@login_required
+def add_to_collection(collection_id):
+    collection = Collection.query.get_or_404(collection_id)
+    if collection.user != current_user:
+        return jsonify({'error': 'You do not have permission to modify this collection.'}), 403
+    
+    data = request.json
+    source = data.get('source')
+    content = data.get('content')
+    
+    try:
+        content_data = json.loads(content)
+        title = content_data.get('title', 'Untitled')
+        url = content_data.get('url', '#')
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid content data.'}), 400
+
+    resource = Resource(title=title, url=url)
+    db.session.add(resource)
+    collection.resources.append(resource)
+    db.session.commit()
+    
+    return jsonify({'message': 'Item added to collection successfully.'}), 200
+
+@app.route('/collections')
+@login_required
+def view_collections():
+    collections = current_user.collections.all()
+    return render_template('collections.html', collections=collections)
 
 @app.route('/visualize')
 def visualize():

@@ -83,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Initialize timeline if on the visualize page
     const timelineEmbed = document.getElementById('timeline-embed');
     if (timelineEmbed && window.TL) {
         console.log('Initializing timeline');
@@ -91,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.timeline = new TL.Timeline('timeline-embed', timelineJson);
     }
 
-    // Initialize map if on the visualize page
     const mapElement = document.getElementById('map');
     if (mapElement && window.L) {
         console.log('Initializing map');
@@ -263,7 +261,7 @@ function createResultHTML(result, source) {
     try {
         modalContent = JSON.stringify(result, (key, value) => {
             if (typeof value === 'string') {
-                return value.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
             }
             return value;
         });
@@ -369,7 +367,9 @@ function showModal(source, content) {
                 htmlContent = '<p>Error displaying content. Please try again.</p>';
         }
     } catch (error) {
-        console.error('Error parsing modal content:', error);
+        console.error('Error parsing modal content for source:', source);
+        console.error('Raw content:', content);
+        console.error('Error:', error);
         htmlContent = '<p>Error displaying content. Please try again.</p>';
     }
 

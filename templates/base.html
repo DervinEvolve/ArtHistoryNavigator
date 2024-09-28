@@ -24,6 +24,7 @@
                     <li><a href="/visualize" class="hover:underline">Visualize</a></li>
                     {% if current_user.is_authenticated %}
                         <li><a href="{{ url_for('profile') }}" class="hover:underline">Profile</a></li>
+                        <li><a href="{{ url_for('view_collections') }}" class="hover:underline">Collections</a></li>
                         <li><a href="{{ url_for('logout') }}" class="hover:underline">Logout</a></li>
                     {% else %}
                         <li><a href="{{ url_for('login') }}" class="hover:underline">Login</a></li>
