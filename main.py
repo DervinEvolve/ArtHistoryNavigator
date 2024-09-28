@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import json
+import click
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
@@ -17,6 +18,15 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 logging.basicConfig(level=logging.INFO)
+
+@app.cli.command("init-db")
+def init_db():
+    db.create_all()
+    click.echo("Database initialized.")
+
+@app.cli.command("hello")
+def hello():
+    click.echo("Hello from Flask!")
 
 @app.route("/")
 def index():
@@ -122,7 +132,8 @@ def add_to_collection(collection_id):
 
 @app.route('/collections')
 def view_collections():
-    return render_template('collections.html', title='Collections')
+    collections = Collection.query.all()
+    return render_template('collections.html', title='Collections', collections=collections)
 
 @app.route('/api/collections')
 def api_collections():

@@ -332,14 +332,25 @@ function showCollectionsModal(source, content) {
 
     fetch('/api/collections')
         .then(response => response.json())
-        .then(collections => {
-            collectionsList.innerHTML = collections.map(collection => `
-                <div class="mb-2">
-                    <button class="add-to-collection px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-collection-id="${collection.id}" data-source="${source}" data-content='${content}'>
-                        ${collection.title}
-                    </button>
-                </div>
-            `).join('');
+        .then(data => {
+            // Ensure that collections is always an array
+            const collections = Array.isArray(data) ? data : [data];
+            
+            if (collections.length === 0) {
+                collectionsList.innerHTML = '<p>No collections available. Please create a collection first.</p>';
+            } else {
+                collectionsList.innerHTML = collections.map(collection => `
+                    <div class="mb-2">
+                        <button class="add-to-collection px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-collection-id="${collection.id}" data-source="${source}" data-content='${content}'>
+                            ${collection.title}
+                        </button>
+                    </div>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching collections:', error);
+            collectionsList.innerHTML = '<p>Error loading collections. Please try again later.</p>';
         });
 
     modal.classList.remove('hidden');

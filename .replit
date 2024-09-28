@@ -27,6 +27,14 @@ args = "Apply Migration"
 task = "workflow.run"
 args = "Create Migration"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Test Flask CLI"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Test Flask CLI with env"
+
 [[workflows.workflow]]
 name = "Start Flask App"
 author = "agent"
@@ -71,6 +79,28 @@ agentRequireRestartOnSave = false
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "flask db migrate -m 'Remove User model and update related tables'"
+
+[[workflows.workflow]]
+name = "Test Flask CLI"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flask hello"
+
+[[workflows.workflow]]
+name = "Test Flask CLI with env"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export FLASK_APP=main.py && flask hello"
 
 [deployment]
 run = ["sh", "-c", "python main.py"]
