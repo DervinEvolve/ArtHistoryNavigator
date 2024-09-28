@@ -44,9 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('read-more-btn')) {
             console.log('Read More button clicked');
+            e.preventDefault();
+            const card = e.target.closest('.search-result-card');
+            const expandedContent = card.querySelector('.expanded-content');
+            expandedContent.classList.toggle('hidden');
+            e.target.textContent = expandedContent.classList.contains('hidden') ? 'Read More' : 'Read Less';
+        } else if (e.target && e.target.classList.contains('add-to-collection-btn')) {
+            console.log('Add to Collection button clicked');
+            e.preventDefault();
             const source = e.target.dataset.source;
             const content = e.target.dataset.content;
-            showModal(source, content);
+            showCollectionsModal(source, content);
         }
     });
 
@@ -82,28 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
             filterResults();
         });
     });
-
-    const timelineEmbed = document.getElementById('timeline-embed');
-    if (timelineEmbed && window.TL) {
-        console.log('Initializing timeline');
-        const timelineJson = JSON.parse(timelineEmbed.dataset.timeline);
-        window.timeline = new TL.Timeline('timeline-embed', timelineJson);
-    }
-
-    const mapElement = document.getElementById('map');
-    if (mapElement && window.L) {
-        console.log('Initializing map');
-        const mapData = JSON.parse(mapElement.dataset.map);
-        const map = L.map('map').setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        mapData.forEach(function(point) {
-            L.marker([point.lat, point.lon]).addTo(map)
-                .bindPopup('<b>' + point.name + '</b><br>' + point.description);
-        });
-    }
 });
 
 async function fetchSearchResults(query, page = 1) {
@@ -204,7 +190,7 @@ function createResultHTML(result, source) {
     };
 
     let cardContent = '';
-    let modalContent = '';
+    let expandedContent = '';
     let iconClass = '';
 
     switch (source) {
@@ -213,11 +199,19 @@ function createResultHTML(result, source) {
             cardContent = `
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.snippet || '', 150)}</p>
             `;
+            expandedContent = `
+                <p>${result.snippet || ''}</p>
+                <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
+            `;
             break;
         case 'internet_archive':
             iconClass = 'internet-archive-icon';
             cardContent = `
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.description || '', 150)}</p>
+            `;
+            expandedContent = `
+                <p>${result.description || ''}</p>
+                <a href="https://archive.org/details/${result.identifier}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
             `;
             break;
         case 'met_museum':
@@ -226,12 +220,26 @@ function createResultHTML(result, source) {
                 <img src="${result.primaryImageSmall}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryImageSmall}">
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.artistDisplayName || '', 50)}</p>
             `;
+            expandedContent = `
+                <img src="${result.primaryImage}" alt="${result.title}" class="w-full max-h-96 object-contain mb-4">
+                <p class="mb-2"><strong>Artist:</strong> ${result.artistDisplayName || 'Unknown'}</p>
+                <p class="mb-2"><strong>Date:</strong> ${result.objectDate || 'N/A'}</p>
+                <p class="mb-4"><strong>Medium:</strong> ${result.medium || 'N/A'}</p>
+                <a href="${result.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
+            `;
             break;
         case 'rijksmuseum':
             iconClass = 'rijksmuseum-icon';
             cardContent = `
                 <img src="${result.webImage.url}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.webImage.url}">
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.principalOrFirstMaker || '', 50)}</p>
+            `;
+            expandedContent = `
+                <img src="${result.webImage.url}" alt="${result.title}" class="w-full max-h-96 object-contain mb-4">
+                <p class="mb-2"><strong>Artist:</strong> ${result.principalOrFirstMaker || 'Unknown'}</p>
+                <p class="mb-2"><strong>Date:</strong> ${result.dating.presentingDate || 'N/A'}</p>
+                <p class="mb-4"><strong>Medium:</strong> ${result.materials.join(', ') || 'N/A'}</p>
+                <a href="${result.links.web}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Rijksmuseum Website</a>
             `;
             break;
         case 'harvard_art_museums':
@@ -240,6 +248,13 @@ function createResultHTML(result, source) {
                 <img src="${result.primaryimageurl}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.primaryimageurl}">
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.people ? result.people[0].name : '', 50)}</p>
             `;
+            expandedContent = `
+                <img src="${result.primaryimageurl}" alt="${result.title}" class="w-full max-h-96 object-contain mb-4">
+                <p class="mb-2"><strong>Artist:</strong> ${result.people ? result.people[0].name : 'Unknown'}</p>
+                <p class="mb-2"><strong>Date:</strong> ${result.dated || 'N/A'}</p>
+                <p class="mb-4"><strong>Medium:</strong> ${result.medium || 'N/A'}</p>
+                <a href="${result.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Harvard Art Museums Website</a>
+            `;
             break;
         case 'cooper_hewitt':
             iconClass = 'cooper-hewitt-icon';
@@ -247,32 +262,29 @@ function createResultHTML(result, source) {
                 <img src="${result.images[0].b.url}" alt="${result.title}" class="w-full h-48 object-cover mb-2 lazy-load" data-src="${result.images[0].b.url}">
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.department_name || '', 50)}</p>
             `;
+            expandedContent = `
+                <img src="${result.images[0].b.url}" alt="${result.title}" class="w-full max-h-96 object-contain mb-4">
+                <p class="mb-2"><strong>Department:</strong> ${result.department_name || 'N/A'}</p>
+                <p class="mb-2"><strong>Date:</strong> ${result.date || 'N/A'}</p>
+                <p class="mb-4"><strong>Medium:</strong> ${result.medium || 'N/A'}</p>
+                <a href="${result.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Cooper Hewitt Website</a>
+            `;
             break;
         case 'perplexity':
             iconClass = 'perplexity-icon';
             cardContent = `
                 <p class="text-sm text-gray-600 mb-4">${truncateText(result.content || '', 150)}</p>
             `;
+            expandedContent = `
+                <p>${result.content || 'No content available'}</p>
+            `;
             break;
     }
 
     console.log('Generated cardContent:', cardContent);
+    console.log('Generated expandedContent:', expandedContent);
 
-    try {
-        modalContent = JSON.stringify(result, (key, value) => {
-            if (typeof value === 'string') {
-                return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-            }
-            return value;
-        });
-    } catch (error) {
-        console.error('Error stringifying result:', error);
-        modalContent = JSON.stringify({ error: 'Unable to display full content' });
-    }
-
-    console.log('Generated modalContent:', modalContent);
-
-    const buttonHtml = `<button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto" data-source="${source}" data-content='${modalContent}'>Read More</button>`;
+    const modalContent = JSON.stringify(result);
 
     const cardHtml = `
         <div class="search-result-card bg-white rounded-lg shadow-md overflow-hidden fade-in" data-source="${source}">
@@ -281,101 +293,66 @@ function createResultHTML(result, source) {
                 <h3 class="text-lg font-semibold">${result.title || 'No title'}</h3>
             </div>
             ${cardContent}
-            ${buttonHtml}
+            <div class="expanded-content hidden">${expandedContent}</div>
+            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto">Read More</button>
+            <button class="add-to-collection-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-200 mt-2" data-source="${source}" data-content='${modalContent}'>Add to Collection</button>
         </div>
     `;
 
     console.log('Final cardHtml:', cardHtml);
 
-    if (!cardHtml.includes('read-more-btn')) {
-        console.error('Read More button is missing from the card HTML');
-    }
-
     return cardHtml;
 }
 
-function showModal(source, content) {
-    console.log('Showing modal for source:', source);
-    const modal = document.getElementById('modal');
-    const modalContent = document.getElementById('modal-content');
+function showCollectionsModal(source, content) {
+    console.log('Showing collections modal for source:', source);
+    const modal = document.getElementById('collections-modal');
+    const collectionsList = document.getElementById('collections-list');
 
-    let htmlContent = '';
-    try {
-        const parsedContent = JSON.parse(content);
-        switch (source) {
-            case 'wikipedia':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
-                    <p class="mb-4">${parsedContent.snippet || ''}</p>
-                    <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(parsedContent.title)}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">Read full article on Wikipedia</a>
-                `;
-                break;
-            case 'internet_archive':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
-                    <p class="mb-4">${parsedContent.description || ''}</p>
-                    <a href="https://archive.org/details/${parsedContent.identifier}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Internet Archive</a>
-                `;
-                break;
-            case 'met_museum':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
-                    <img src="${parsedContent.primaryImage}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
-                    <p class="mb-2"><strong>Artist:</strong> ${parsedContent.artistDisplayName || 'Unknown'}</p>
-                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.objectDate || 'N/A'}</p>
-                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
-                    <a href="${parsedContent.objectURL}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Met Museum Website</a>
-                `;
-                break;
-            case 'rijksmuseum':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
-                    <img src="${parsedContent.webImage.url}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
-                    <p class="mb-2"><strong>Artist:</strong> ${parsedContent.principalOrFirstMaker || 'Unknown'}</p>
-                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.dating.presentingDate || 'N/A'}</p>
-                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.materials.join(', ') || 'N/A'}</p>
-                    <a href="${parsedContent.links.web}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Rijksmuseum Website</a>
-                `;
-                break;
-            case 'harvard_art_museums':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
-                    <img src="${parsedContent.primaryimageurl}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
-                    <p class="mb-2"><strong>Artist:</strong> ${parsedContent.people ? parsedContent.people[0].name : 'Unknown'}</p>
-                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.dated || 'N/A'}</p>
-                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
-                    <a href="${parsedContent.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Harvard Art Museums Website</a>
-                `;
-                break;
-            case 'cooper_hewitt':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">${parsedContent.title}</h2>
-                    <img src="${parsedContent.images[0].b.url}" alt="${parsedContent.title}" class="w-full max-h-96 object-contain mb-4">
-                    <p class="mb-2"><strong>Department:</strong> ${parsedContent.department_name || 'N/A'}</p>
-                    <p class="mb-2"><strong>Date:</strong> ${parsedContent.date || 'N/A'}</p>
-                    <p class="mb-4"><strong>Medium:</strong> ${parsedContent.medium || 'N/A'}</p>
-                    <a href="${parsedContent.url}" target="_blank" class="text-blue-600 hover:underline mt-4 inline-block">View on Cooper Hewitt Website</a>
-                `;
-                break;
-            case 'perplexity':
-                htmlContent = `
-                    <h2 class="text-2xl font-bold mb-4">Perplexity AI Response</h2>
-                    <p class="mb-4">${parsedContent.content || 'No content available'}</p>
-                `;
-                break;
-            default:
-                htmlContent = '<p>Error displaying content. Please try again.</p>';
-        }
-    } catch (error) {
-        console.error('Error parsing modal content for source:', source);
-        console.error('Raw content:', content);
-        console.error('Error:', error);
-        htmlContent = '<p>Error displaying content. Please try again.</p>';
-    }
+    // Fetch user's collections
+    fetch('/api/collections')
+        .then(response => response.json())
+        .then(collections => {
+            collectionsList.innerHTML = collections.map(collection => `
+                <div class="mb-2">
+                    <button class="add-to-collection px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-collection-id="${collection.id}" data-source="${source}" data-content='${content}'>
+                        ${collection.title}
+                    </button>
+                </div>
+            `).join('');
+        });
 
-    modalContent.innerHTML = htmlContent;
     modal.classList.remove('hidden');
 }
+
+document.getElementById('close-collections-modal').addEventListener('click', function() {
+    document.getElementById('collections-modal').classList.add('hidden');
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('add-to-collection')) {
+        const collectionId = e.target.dataset.collectionId;
+        const source = e.target.dataset.source;
+        const content = e.target.dataset.content;
+
+        // Add item to collection
+        fetch(`/add_to_collection/${collectionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ source: source, content: content }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                document.getElementById('collections-modal').classList.add('hidden');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+});
 
 function showLoadingIndicator() {
     console.log('Showing loading indicator');
