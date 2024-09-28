@@ -105,7 +105,6 @@ def add_to_collection(collection_id):
     collection = Collection.query.get_or_404(collection_id)
     
     data = request.json
-    source = data.get('source')
     content = data.get('content')
     
     try:
@@ -124,8 +123,25 @@ def add_to_collection(collection_id):
 
 @app.route('/collections')
 def view_collections():
-    collections = Collection.query.all()
-    return render_template('collections.html', collections=collections)
+    return render_template('collections.html', title='Collections')
+
+@app.route('/api/collections')
+def api_collections():
+    try:
+        collections = Collection.query.all()
+        collections_data = [
+            {
+                'id': collection.id,
+                'title': collection.title,
+                'description': collection.description,
+                'resource_count': len(collection.resources)
+            }
+            for collection in collections
+        ]
+        return jsonify(collections_data), 200
+    except Exception as e:
+        logging.error(f"Error in api_collections: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching collections. Please try again later."}), 500
 
 @app.route('/visualize')
 def visualize():
