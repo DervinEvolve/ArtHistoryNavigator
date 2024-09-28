@@ -9,8 +9,6 @@ let visibleSources = ['wikipedia', 'internet_archive', 'met_museum', 'rijksmuseu
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM content loaded');
     const searchResults = document.getElementById('search-results');
-    const modal = document.getElementById('modal');
-    const closeModal = document.getElementById('close-modal');
     const loadingIndicator = document.getElementById('loading-indicator');
     const backToTopButton = document.getElementById('back-to-top');
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -27,34 +25,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (closeModal) {
-        closeModal.addEventListener('click', () => {
-            console.log('Closing modal');
-            modal.classList.add('hidden');
-        });
-    }
-
-    window.addEventListener('click', (event) => {
-        if (event.target === modal) {
-            console.log('Closing modal (clicked outside)');
-            modal.classList.add('hidden');
-        }
-    });
-
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('read-more-btn')) {
             console.log('Read More button clicked');
             e.preventDefault();
             const card = e.target.closest('.search-result-card');
-            const expandedContent = card.querySelector('.expanded-content');
-            expandedContent.classList.toggle('hidden');
-            e.target.textContent = expandedContent.classList.contains('hidden') ? 'Read More' : 'Read Less';
+            showFloatingCard(card);
         } else if (e.target && e.target.classList.contains('add-to-collection-btn')) {
             console.log('Add to Collection button clicked');
             e.preventDefault();
             const source = e.target.dataset.source;
             const content = e.target.dataset.content;
             showCollectionsModal(source, content);
+        } else if (e.target.classList.contains('close-floating-card')) {
+            e.preventDefault();
+            const floatingCard = document.querySelector('.floating-card');
+            if (floatingCard) {
+                floatingCard.remove();
+            }
         }
     });
 
@@ -294,14 +282,36 @@ function createResultHTML(result, source) {
             </div>
             ${cardContent}
             <div class="expanded-content hidden">${expandedContent}</div>
-            <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200 mt-auto">Read More</button>
-            <button class="add-to-collection-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-200 mt-2" data-source="${source}" data-content='${modalContent}'>Add to Collection</button>
+            <div class="flex justify-between mt-4">
+                <button class="read-more-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200">Read More</button>
+                <button class="add-to-collection-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-200" data-source="${source}" data-content='${modalContent}'>Add to Collection</button>
+            </div>
         </div>
     `;
 
     console.log('Final cardHtml:', cardHtml);
 
     return cardHtml;
+}
+
+function showFloatingCard(card) {
+    const existingFloatingCard = document.querySelector('.floating-card');
+    if (existingFloatingCard) {
+        existingFloatingCard.remove();
+    }
+
+    const expandedContent = card.querySelector('.expanded-content').innerHTML;
+    const floatingCard = document.createElement('div');
+    floatingCard.className = 'floating-card fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl z-50 max-w-2xl w-full max-h-[80vh] overflow-y-auto';
+    floatingCard.innerHTML = `
+        ${expandedContent}
+        <button class="close-floating-card absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    `;
+    document.body.appendChild(floatingCard);
 }
 
 function showCollectionsModal(source, content) {
